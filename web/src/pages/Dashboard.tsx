@@ -1,6 +1,7 @@
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { claimFaucet, getPrices } from '../api'
 import CopyButton from '../components/CopyButton'
 import { explorerAddress, LAMPORTS_PER_SOL } from '../config'
 import { formatUnits, shortAddr } from '../lib/format'
@@ -12,6 +13,8 @@ export default function Dashboard() {
   const { address } = useWallet()
   const { data: assets, isLoading, error } = useAssets()
   const qc = useQueryClient()
+  const prices = useQuery({ queryKey: ['prices'], queryFn: getPrices, refetchInterval: 60_000, staleTime: 30_000, retry: false })
+  const [faucet, setFaucet] = useState<{ state: 'idle' | 'busy' | 'ok' | 'err'; msg?: string }>({ state: 'idle' })
   const [airdrop, setAirdrop] = useState<{ state: 'idle' | 'busy' | 'ok' | 'err'; msg?: string }>({ state: 'idle' })
 
   const getSol = async () => {
@@ -29,7 +32,21 @@ export default function Dashboard() {
     }
   }
 
+  const getTestTokens = async () => {
+    if (!address) return
+    setFaucet({ state: 'busy' })
+    try {
+      const res = await claimFaucet(address)
+      const text = res.tokens.map((t) => `${formatUnits(BigInt(t.amount), t.decimals)} ${t.symbol}`).join(' and ')
+      setFaucet({ state: 'ok', msg: `Sent ${text}.` })
+      void qc.invalidateQueries({ queryKey: ['assets', address] })
+    } catch (e) {
+      setFaucet({ state: 'err', msg: e instanceof Error ? e.message : 'The faucet is unavailable.' })
+    }
+  }
+
   const sol = assets?.find((a) => a.id === 'sol')
+  const solUsd = sol && prices.data?.solUsd ? (Number(sol.balance) / 1e9) * prices.data.solUsd : null
 
   return (
     <div className="space-y-4">
@@ -38,6 +55,12 @@ export default function Dashboard() {
         <div className="mt-1 text-4xl font-bold tracking-tight">
           {sol ? formatUnits(sol.balance, 9, 6) : '—'} <span className="text-lg font-semibold text-muted">SOL</span>
         </div>
+        {solUsd !== null && (
+          <div className="mt-1 text-sm text-muted">
+            ≈ ${solUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+            {prices.data?.stale && ' (price may be out of date)'}
+          </div>
+        )}
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted">
           <a className="underline decoration-dotted" href={address ? explorerAddress(address) : '#'} target="_blank" rel="noreferrer">
             {address ? shortAddr(address, 6) : ''}
@@ -55,6 +78,10 @@ export default function Dashboard() {
             {airdrop.state === 'busy' ? 'Requesting…' : 'Get SOL'}
           </button>
         </div>
+        <button className="btn-ghost mt-2 w-full" onClick={getTestTokens} disabled={faucet.state === 'busy'}>
+          {faucet.state === 'busy' ? 'Minting…' : 'Get test tokens (tUSDC + tBONK)'}
+        </button>
+        {faucet.msg && <p className={`mt-3 text-xs ${faucet.state === 'err' ? 'text-amber-300' : 'text-accent2'}`}>{faucet.msg}</p>}
         {airdrop.msg && (
           <p className={`mt-3 text-xs ${airdrop.state === 'err' ? 'text-amber-300' : 'text-accent2'}`}>{airdrop.msg}</p>
         )}

@@ -2,7 +2,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import Activity from './pages/Activity'
+import Claim from './pages/Claim'
 import Dashboard from './pages/Dashboard'
+import Links from './pages/Links'
 import Onboarding from './pages/Onboarding'
 import Receive from './pages/Receive'
 import Send from './pages/Send'
@@ -26,6 +28,7 @@ function Gate() {
         <Route index element={<Dashboard />} />
         <Route path="send" element={<Send />} />
         <Route path="swap" element={<Swap />} />
+        <Route path="links" element={<Links />} />
         <Route path="receive" element={<Receive />} />
         <Route path="activity" element={<Activity />} />
         <Route path="settings" element={<Settings />} />
@@ -40,7 +43,11 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <WalletProvider>
         <BrowserRouter>
-          <Gate />
+          <Routes>
+            {/* public: works without a wallet, straight from a claim link */}
+            <Route path="/claim" element={<Claim />} />
+            <Route path="/*" element={<Gate />} />
+          </Routes>
         </BrowserRouter>
       </WalletProvider>
     </QueryClientProvider>

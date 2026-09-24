@@ -7,6 +7,7 @@ const NAV = [
   { to: '/', label: 'Wallet', end: true },
   { to: '/send', label: 'Send' },
   { to: '/swap', label: 'Swap' },
+  { to: '/links', label: 'Links' },
   { to: '/receive', label: 'Receive' },
   { to: '/activity', label: 'Activity' },
   { to: '/settings', label: 'Settings' },
@@ -48,14 +49,14 @@ export default function Layout() {
         </div>
       </header>
 
-      <nav className="mb-5 flex gap-1 rounded-xl border border-line bg-panel p-1">
+      <nav className="mb-5 flex gap-1 overflow-x-auto rounded-xl border border-line bg-panel p-1">
         {NAV.map((n) => (
           <NavLink
             key={n.to}
             to={n.to}
             end={n.end}
             className={({ isActive }) =>
-              `flex-1 rounded-lg px-2 py-2 text-center text-sm font-medium transition ${
+              `flex-1 whitespace-nowrap rounded-lg px-3 py-2 text-center text-sm font-medium transition ${
                 isActive ? 'bg-white/10 text-white' : 'text-muted hover:text-white'
               }`
             }
