@@ -24,4 +24,10 @@ pub enum ErrorCode {
     AmountTooSmall,
     #[msg("This link holds a different kind of asset")]
     LinkTypeMismatch,
+    #[msg("Schedule must satisfy start <= cliff <= end, with the end in the future")]
+    InvalidSchedule,
+    #[msg("Nothing has vested yet, or everything vested was already withdrawn")]
+    NothingToWithdraw,
+    #[msg("This timelock was created as non-cancellable")]
+    NotCancellable,
 }

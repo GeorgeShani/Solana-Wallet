@@ -281,6 +281,211 @@
       ]
     },
     {
+      "name": "announce",
+      "docs": [
+        "Publish the ephemeral key of a stealth payment so its recipient can find it."
+      ],
+      "discriminator": [
+        7,
+        30,
+        100,
+        250,
+        110,
+        253,
+        3,
+        149
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "docs": [
+            "Required so an announcement can't be produced without paying a transaction fee."
+          ],
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "ephemeral",
+          "type": "pubkey"
+        },
+        {
+          "name": "stealth",
+          "type": "pubkey"
+        },
+        {
+          "name": "view_tag",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "cancel_timelock",
+      "docs": [
+        "The sender takes back the unvested part (only for cancellable timelocks)."
+      ],
+      "discriminator": [
+        158,
+        180,
+        47,
+        81,
+        133,
+        231,
+        168,
+        238
+      ],
+      "accounts": [
+        {
+          "name": "sender",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "timelock"
+          ]
+        },
+        {
+          "name": "timelock",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  105,
+                  109,
+                  101,
+                  108,
+                  111,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "sender"
+              },
+              {
+                "kind": "account",
+                "path": "timelock.recipient",
+                "account": "Timelock"
+              },
+              {
+                "kind": "account",
+                "path": "timelock.seed",
+                "account": "Timelock"
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "timelock"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "timelock"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "sender_token",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "claim_sol_link",
       "docs": [
         "Pay a SOL link out to `recipient` (signed by the claim key)."
@@ -558,6 +763,201 @@
         {
           "name": "expiry",
           "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "create_timelock",
+      "docs": [
+        "Lock `amount` tokens for `recipient` on a schedule: nothing before `cliff`, everything",
+        "from `end`, linear from `start` in between. `seed` lets one sender make several locks."
+      ],
+      "discriminator": [
+        243,
+        10,
+        110,
+        170,
+        71,
+        251,
+        210,
+        87
+      ],
+      "accounts": [
+        {
+          "name": "sender",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "recipient"
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "timelock",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  105,
+                  109,
+                  101,
+                  108,
+                  111,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "sender"
+              },
+              {
+                "kind": "account",
+                "path": "recipient"
+              },
+              {
+                "kind": "arg",
+                "path": "seed"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "timelock"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "sender_token",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "seed",
+          "type": "u64"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "start",
+          "type": "i64"
+        },
+        {
+          "name": "cliff",
+          "type": "i64"
+        },
+        {
+          "name": "end",
+          "type": "i64"
+        },
+        {
+          "name": "cancellable",
+          "type": "bool"
         }
       ]
     },
@@ -1736,6 +2136,178 @@
           "type": "bool"
         }
       ]
+    },
+    {
+      "name": "withdraw_timelock",
+      "docs": [
+        "The recipient withdraws what has vested so far."
+      ],
+      "discriminator": [
+        85,
+        176,
+        197,
+        199,
+        49,
+        152,
+        142,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "recipient",
+          "signer": true
+        },
+        {
+          "name": "timelock",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  105,
+                  109,
+                  101,
+                  108,
+                  111,
+                  99,
+                  107
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "timelock.sender",
+                "account": "Timelock"
+              },
+              {
+                "kind": "account",
+                "path": "recipient"
+              },
+              {
+                "kind": "account",
+                "path": "timelock.seed",
+                "account": "Timelock"
+              }
+            ]
+          }
+        },
+        {
+          "name": "sender",
+          "docs": [
+            "Gets the accounts' rent back once everything is withdrawn."
+          ],
+          "writable": true,
+          "relations": [
+            "timelock"
+          ]
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "timelock"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "timelock"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "recipient_token",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -1763,6 +2335,34 @@
         177,
         109,
         188
+      ]
+    },
+    {
+      "name": "Timelock",
+      "discriminator": [
+        189,
+        33,
+        78,
+        75,
+        205,
+        31,
+        4,
+        177
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "StealthAnnouncement",
+      "discriminator": [
+        197,
+        85,
+        83,
+        203,
+        142,
+        88,
+        5,
+        176
       ]
     }
   ],
@@ -1821,6 +2421,21 @@
       "code": 6010,
       "name": "LinkTypeMismatch",
       "msg": "This link holds a different kind of asset"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidSchedule",
+      "msg": "Schedule must satisfy start <= cliff <= end, with the end in the future"
+    },
+    {
+      "code": 6012,
+      "name": "NothingToWithdraw",
+      "msg": "Nothing has vested yet, or everything vested was already withdrawn"
+    },
+    {
+      "code": 6013,
+      "name": "NotCancellable",
+      "msg": "This timelock was created as non-cancellable"
     }
   ],
   "types": [
@@ -1903,6 +2518,102 @@
           }
         ]
       }
+    },
+    {
+      "name": "StealthAnnouncement",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ephemeral",
+            "docs": [
+              "The sender's ephemeral public key `R = r·G` (a compressed Edwards point, 32 bytes)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "stealth",
+            "docs": [
+              "The one-time address that was paid."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "view_tag",
+            "docs": [
+              "First byte of a hash of the shared secret. Lets a wallet skip ~99.6% of announcements",
+              "after one cheap comparison instead of doing the full derivation for each."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Timelock",
+      "docs": [
+        "Tokens locked for `recipient` on a schedule: nothing before `cliff`, everything from `end`,",
+        "and a straight line from `start` to `end` in between (a cliff of `start` means no cliff;",
+        "`start == cliff == end` is a plain \"unlock on this date\" transfer).",
+        "",
+        "Only SPL tokens are held here (in the vault ATA this PDA owns). Native SOL takes part as",
+        "wrapped SOL: the wallet wraps it before locking and unwraps it when withdrawing."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "sender",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "seed",
+            "docs": [
+              "Lets one sender lock several amounts for the same recipient."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "total",
+            "docs": [
+              "The most the recipient can ever receive (fixed when the schedule is set or cancelled)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "withdrawn",
+            "type": "u64"
+          },
+          {
+            "name": "start",
+            "type": "i64"
+          },
+          {
+            "name": "cliff",
+            "type": "i64"
+          },
+          {
+            "name": "end",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "cancellable",
+            "type": "bool"
+          }
+        ]
+      }
     }
   ],
   "constants": [
@@ -1959,6 +2670,14 @@
       ],
       "type": "bytes",
       "value": "[112, 111, 111, 108]"
+    },
+    {
+      "name": "TIMELOCK_SEED",
+      "docs": [
+        "Seed for a timelock PDA: [\"timelock\", sender, recipient, seed]."
+      ],
+      "type": "bytes",
+      "value": "[116, 105, 109, 101, 108, 111, 99, 107]"
     }
   ]
 }

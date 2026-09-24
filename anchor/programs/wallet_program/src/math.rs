@@ -119,6 +119,24 @@ pub fn quote_remove(
     Ok((share(reserve_a)?, share(reserve_b)?))
 }
 
+/// How much of `total` has vested at time `now`.
+///
+/// Nothing before `cliff`; everything from `end`; in between a straight line from `start`
+/// to `end` (so at the cliff the recipient can take the share that accrued since `start`).
+/// Callers guarantee `start <= cliff <= end`, which also rules out dividing by zero.
+pub fn vested_amount(total: u64, start: i64, cliff: i64, end: i64, now: i64) -> u64 {
+    if now < cliff {
+        return 0;
+    }
+    if now >= end {
+        return total;
+    }
+    // here cliff <= now < end, so start <= now < end
+    let elapsed = (now - start) as u128;
+    let duration = (end - start) as u128;
+    ((total as u128) * elapsed / duration) as u64
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -194,5 +212,46 @@ mod tests {
         let q = quote_add(ra, rb, supply, 123_457, 999_999).unwrap();
         let (a, b) = quote_remove(ra + q.amount_a, rb + q.amount_b, supply + q.lp, q.lp).unwrap();
         assert!(a <= q.amount_a && b <= q.amount_b);
+    }
+
+    #[test]
+    fn vesting_is_linear_between_start_and_end() {
+        // 1_000 tokens over t=100..1_100, no cliff
+        let v = |now| vested_amount(1_000, 100, 100, 1_100, now);
+        assert_eq!(v(99), 0);
+        assert_eq!(v(100), 0);
+        assert_eq!(v(350), 250);
+        assert_eq!(v(600), 500);
+        assert_eq!(v(1_099), 999);
+        assert_eq!(v(1_100), 1_000);
+        assert_eq!(v(99_999), 1_000);
+    }
+
+    #[test]
+    fn a_cliff_holds_everything_back_then_releases_the_accrued_share() {
+        // linear over 0..1_000 but nothing until the cliff at 400
+        let v = |now| vested_amount(1_000, 0, 400, 1_000, now);
+        assert_eq!(v(399), 0);
+        assert_eq!(v(400), 400); // the share accrued since start, released at once
+        assert_eq!(v(700), 700);
+    }
+
+    #[test]
+    fn unlock_on_a_date_is_all_or_nothing() {
+        let v = |now| vested_amount(5_000, 777, 777, 777, now);
+        assert_eq!(v(776), 0);
+        assert_eq!(v(777), 5_000);
+        assert_eq!(v(1_000_000), 5_000);
+    }
+
+    #[test]
+    fn vesting_never_exceeds_the_total_or_decreases() {
+        let mut last = 0;
+        for now in (0..=2_000).step_by(7) {
+            let v = vested_amount(u64::MAX, 100, 300, 1_900, now);
+            assert!(v >= last);
+            last = v;
+        }
+        assert_eq!(last, u64::MAX);
     }
 }

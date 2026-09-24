@@ -93,4 +93,37 @@ pub mod wallet_program {
     pub fn refund_token_link(ctx: Context<RefundTokenLink>) -> Result<()> {
         crate::instructions::claim_token::handle_refund_token_link(ctx)
     }
+
+    // ---------------------------------------------------------------- timelocks
+
+    /// Lock `amount` tokens for `recipient` on a schedule: nothing before `cliff`, everything
+    /// from `end`, linear from `start` in between. `seed` lets one sender make several locks.
+    pub fn create_timelock(
+        ctx: Context<CreateTimelock>,
+        seed: u64,
+        amount: u64,
+        start: i64,
+        cliff: i64,
+        end: i64,
+        cancellable: bool,
+    ) -> Result<()> {
+        crate::instructions::timelock::handle_create_timelock(ctx, seed, amount, start, cliff, end, cancellable)
+    }
+
+    /// The recipient withdraws what has vested so far.
+    pub fn withdraw_timelock(ctx: Context<WithdrawTimelock>) -> Result<()> {
+        crate::instructions::timelock::handle_withdraw_timelock(ctx)
+    }
+
+    /// The sender takes back the unvested part (only for cancellable timelocks).
+    pub fn cancel_timelock(ctx: Context<CancelTimelock>) -> Result<()> {
+        crate::instructions::timelock::handle_cancel_timelock(ctx)
+    }
+
+    // ---------------------------------------------------------------- stealth
+
+    /// Publish the ephemeral key of a stealth payment so its recipient can find it.
+    pub fn announce(ctx: Context<Announce>, ephemeral: Pubkey, stealth: Pubkey, view_tag: u8) -> Result<()> {
+        crate::instructions::stealth::handle_announce(ctx, ephemeral, stealth, view_tag)
+    }
 }

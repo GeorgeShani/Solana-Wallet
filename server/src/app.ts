@@ -1,9 +1,11 @@
 import { Hono, type Context } from 'hono'
 import { cors } from 'hono/cors'
 import { getConnInfo } from 'hono/bun'
+import type { AnnouncementStore, Indexer } from './announcements'
 import type { FaucetStore } from './db'
 import type { PriceService } from './prices'
 import { createRateLimiter, type RateLimiter } from './rateLimit'
+import { announcementRoutes } from './routes/announcements'
 import { faucetRoutes } from './routes/faucet'
 import { relayRoutes } from './routes/relay'
 import type { Chain, Minter, Relayer } from './types'
@@ -15,8 +17,9 @@ export interface Deps {
   minter: Minter
   faucetStore: FaucetStore
   prices: PriceService
+  announcements: { store: AnnouncementStore; indexer: Indexer }
   /** Override the default limits (tests). */
-  limiters?: { relay?: RateLimiter; faucet?: RateLimiter }
+  limiters?: { relay?: RateLimiter; faucet?: RateLimiter; announcements?: RateLimiter }
   now?: () => number
 }
 
@@ -56,6 +59,16 @@ export function createApp(deps: Deps) {
       limiter: deps.limiters?.faucet ?? createRateLimiter({ windowMs: 60_000, max: 10 }),
       clientIp,
       now: deps.now,
+    }),
+  )
+
+  app.route(
+    '/announcements',
+    announcementRoutes({
+      store: deps.announcements.store,
+      indexer: deps.announcements.indexer,
+      limiter: deps.limiters?.announcements ?? createRateLimiter({ windowMs: 60_000, max: 60 }),
+      clientIp,
     }),
   )
 

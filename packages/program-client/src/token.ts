@@ -59,6 +59,28 @@ export function systemCreateAccount(input: {
   }
 }
 
+/** SPL Token `TransferChecked`: moves tokens between two token accounts, verifying the mint's decimals. */
+export function transferChecked(input: {
+  source: Address
+  mint: Address
+  destination: Address
+  /** The source account's owner, who must sign. */
+  authority: Address
+  amount: bigint
+  decimals: number
+}): Instruction {
+  return {
+    programAddress: TOKEN_PROGRAM,
+    accounts: [
+      meta(input.source, AccountRole.WRITABLE),
+      meta(input.mint, AccountRole.READONLY),
+      meta(input.destination, AccountRole.WRITABLE),
+      meta(input.authority, AccountRole.READONLY_SIGNER),
+    ],
+    data: concat(u8(12), u64(input.amount), u8(input.decimals)),
+  }
+}
+
 /** Refresh a wrapped-SOL account's token balance after lamports were sent to it. */
 export function syncNative(account: Address): Instruction {
   return {

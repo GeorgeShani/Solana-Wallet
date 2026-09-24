@@ -12,6 +12,10 @@ pub const LP_MINT_SEED: &[u8] = b"lp";
 #[constant]
 pub const CLAIM_SEED: &[u8] = b"claim";
 
+/// Seed for a timelock PDA: ["timelock", sender, recipient, seed].
+#[constant]
+pub const TIMELOCK_SEED: &[u8] = b"timelock";
+
 /// Fees are expressed in basis points (1 bp = 0.01%).
 #[constant]
 pub const FEE_DENOMINATOR: u64 = 10_000;

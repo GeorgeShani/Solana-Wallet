@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::constants::{CLAIM_SEED, POOL_SEED};
+use crate::constants::{CLAIM_SEED, POOL_SEED, TIMELOCK_SEED};
 
 /// A two-token liquidity pool. Reserves are not stored here: they are the balances of
 /// the pool's vaults (the pool PDA's associated token accounts for each mint).
@@ -48,5 +48,36 @@ impl ClaimLink {
     /// Seeds the claim PDA signs with (to move tokens out of its vault).
     pub fn signer_seeds<'a>(&'a self, bump: &'a [u8; 1]) -> [&'a [u8]; 3] {
         [CLAIM_SEED, self.claim_key.as_ref(), bump]
+    }
+}
+
+/// Tokens locked for `recipient` on a schedule: nothing before `cliff`, everything from `end`,
+/// and a straight line from `start` to `end` in between (a cliff of `start` means no cliff;
+/// `start == cliff == end` is a plain "unlock on this date" transfer).
+///
+/// Only SPL tokens are held here (in the vault ATA this PDA owns). Native SOL takes part as
+/// wrapped SOL: the wallet wraps it before locking and unwraps it when withdrawing.
+#[account]
+#[derive(InitSpace)]
+pub struct Timelock {
+    pub sender: Pubkey,
+    pub recipient: Pubkey,
+    pub mint: Pubkey,
+    /// Lets one sender lock several amounts for the same recipient.
+    pub seed: u64,
+    /// The most the recipient can ever receive (fixed when the schedule is set or cancelled).
+    pub total: u64,
+    pub withdrawn: u64,
+    pub start: i64,
+    pub cliff: i64,
+    pub end: i64,
+    pub bump: u8,
+    pub cancellable: bool,
+}
+
+impl Timelock {
+    /// Seeds the timelock PDA signs with. `seed` and `bump` must outlive the returned array.
+    pub fn signer_seeds<'a>(&'a self, seed: &'a [u8; 8], bump: &'a [u8; 1]) -> [&'a [u8]; 5] {
+        [TIMELOCK_SEED, self.sender.as_ref(), self.recipient.as_ref(), seed, bump]
     }
 }

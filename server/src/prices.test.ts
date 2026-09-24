@@ -9,7 +9,7 @@ describe('price service', () => {
   test('fetches once and serves the cache within the TTL', async () => {
     let calls = 0
     let t = 1_000
-    const svc = createPriceService({ ttlMs: 60_000, now: () => t, fetchImpl: (async () => (calls++, ok(151.5)())) as typeof fetch })
+    const svc = createPriceService({ ttlMs: 60_000, now: () => t, fetchImpl: (async () => (calls++, ok(151.5)())) as unknown as typeof fetch })
     expect(await svc.get()).toEqual({ solUsd: 151.5, updatedAt: 1_000, stale: false })
     t += 30_000
     await svc.get()
@@ -25,7 +25,7 @@ describe('price service', () => {
     const svc = createPriceService({
       ttlMs: 1_000,
       now: () => t,
-      fetchImpl: (async () => (fail ? new Response('', { status: 500 }) : ok(140)())) as typeof fetch,
+      fetchImpl: (async () => (fail ? new Response('', { status: 500 }) : ok(140)())) as unknown as typeof fetch,
     })
     await svc.get()
     fail = true
@@ -36,20 +36,20 @@ describe('price service', () => {
   })
 
   test('returns null when nothing has ever been fetched', async () => {
-    const svc = createPriceService({ fetchImpl: (async () => new Response('', { status: 503 })) as typeof fetch })
+    const svc = createPriceService({ fetchImpl: (async () => new Response('', { status: 503 })) as unknown as typeof fetch })
     expect(await svc.get()).toEqual({ solUsd: null, updatedAt: null, stale: false })
   })
 
   test('rejects nonsense responses', async () => {
     for (const bad of ['abc', -1, 0, null, undefined]) {
-      const svc = createPriceService({ fetchImpl: ok(bad) as typeof fetch })
+      const svc = createPriceService({ fetchImpl: ok(bad) as unknown as typeof fetch })
       expect((await svc.get()).solUsd).toBeNull()
     }
   })
 
   test('concurrent callers share one request', async () => {
     let calls = 0
-    const svc = createPriceService({ fetchImpl: (async () => (calls++, await new Promise((r) => setTimeout(r, 10)), ok(150)())) as typeof fetch })
+    const svc = createPriceService({ fetchImpl: (async () => (calls++, await new Promise((r) => setTimeout(r, 10)), ok(150)())) as unknown as typeof fetch })
     await Promise.all([svc.get(), svc.get(), svc.get()])
     expect(calls).toBe(1)
   })

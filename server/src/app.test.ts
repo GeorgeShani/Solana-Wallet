@@ -2,7 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import { address, type Address } from '@solana/addresses'
 import { partiallySignTransaction, getTransactionDecoder } from '@solana/transactions'
 import { createApp, type Deps } from './app'
-import { openFaucetStore } from './db'
+import { createAnnouncementStore, createFaucetStore, openDatabase } from './db'
+import { createIndexer } from './announcements'
 import { createRateLimiter } from './rateLimit'
 import { MIN_RELAYER_LAMPORTS } from './routes/relay'
 import { buildTx, claimFixtures, newSigner } from './testUtils'
@@ -36,12 +37,18 @@ async function setup(overrides: Partial<Deps> & { balance?: bigint; minterDelay?
     },
   }
   let clock = 1_000_000_000_000
+  const db = openDatabase(':memory:')
+  const announcementStore = createAnnouncementStore(db)
   const app = createApp({
     corsOrigins: [ORIGIN],
     chain,
     relayer,
     minter,
-    faucetStore: openFaucetStore(':memory:'),
+    faucetStore: createFaucetStore(db),
+    announcements: {
+      store: announcementStore,
+      indexer: createIndexer({ store: announcementStore, source: { listSignatures: async () => [], getLogs: async () => null } }),
+    },
     prices: { get: async () => ({ solUsd: 150.25, updatedAt: 1, stale: false }) },
     now: () => clock,
     ...overrides,

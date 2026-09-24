@@ -8,8 +8,10 @@ import {
   createAssociatedTokenAccountIdempotent,
   findAssociatedTokenAddress,
   mintTo,
+  PROGRAM_ADDRESS,
   toTransactionMessage,
 } from '@wallet/program-client'
+import type { ProgramSource } from './announcements'
 import type { Config } from './config'
 import type { Chain, Minter, Relayer } from './types'
 
@@ -38,6 +40,34 @@ export function createChain(rpcUrl: string): Chain {
         await sleep(1000)
       }
       throw new Error('Timed out waiting for confirmation')
+    },
+  }
+}
+
+/** Reads our program's transaction history over RPC (used to index stealth announcements). */
+export function createProgramSource(rpcUrl: string): ProgramSource {
+  const rpc = createSolanaRpc(rpcUrl)
+  return {
+    async listSignatures({ before, until, limit }) {
+      const res = await rpc
+        .getSignaturesForAddress(PROGRAM_ADDRESS, {
+          limit,
+          before: before ? signature(before) : undefined,
+          until: until ? signature(until) : undefined,
+          commitment: 'confirmed',
+        })
+        .send()
+      return res.map((s) => ({
+        signature: String(s.signature),
+        err: s.err,
+        blockTime: s.blockTime == null ? null : Number(s.blockTime),
+      }))
+    },
+    async getLogs(sig) {
+      const tx = await rpc
+        .getTransaction(signature(sig), { encoding: 'json', maxSupportedTransactionVersion: 0, commitment: 'confirmed' })
+        .send()
+      return tx?.meta?.logMessages ? [...tx.meta.logMessages] : null
     },
   }
 }
