@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.keypair.json
+keys/
+.DS_Store
+# Anchor (also ignored inside anchor/.gitignore); program keypair must never be committed
+anchor/target/
+anchor/.anchor/
+server/data/

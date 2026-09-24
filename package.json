@@ -1,0 +1,10 @@
+{
+  "name": "solana-wallet",
+  "private": true,
+  "workspaces": ["web", "server", "packages/*"],
+  "scripts": {
+    "dev:web": "bun --cwd web run dev",
+    "dev:server": "bun --cwd server run dev",
+    "test": "bun test"
+  }
+}
