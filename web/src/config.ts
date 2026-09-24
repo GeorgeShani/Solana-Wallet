@@ -1,3 +1,5 @@
+import { DEVNET, WSOL_MINT } from '@wallet/shared'
+
 export const CLUSTER = 'devnet' as const
 export const RPC_URL: string = import.meta.env.VITE_RPC_URL ?? 'https://api.devnet.solana.com'
 
@@ -16,7 +18,7 @@ export interface TokenInfo {
   decimals: number
 }
 
-/** Tokens we can label. Phase 2 adds our own test mints (tUSDC, tBONK). */
+/** Tokens we can label: Circle's devnet USDC plus the test tokens our AMM pools trade. */
 export const KNOWN_TOKENS: TokenInfo[] = [
   {
     mint: '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU',
@@ -24,6 +26,9 @@ export const KNOWN_TOKENS: TokenInfo[] = [
     name: 'USDC (devnet)',
     decimals: 6,
   },
+  ...DEVNET.tokens
+    .filter((t) => t.mint !== WSOL_MINT)
+    .map((t) => ({ mint: t.mint, symbol: t.symbol, name: t.name, decimals: t.decimals })),
 ]
 
 export const tokenByMint = (mint: string) => KNOWN_TOKENS.find((t) => t.mint === mint)

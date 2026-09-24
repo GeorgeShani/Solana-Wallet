@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { explorerTx, SYSTEM_ACCOUNT_SIZE, TOKEN_ACCOUNT_SIZE } from '../config'
 import { formatUnits, parseUnits, shortAddr } from '../lib/format'
-import { getRentExemption, getSolBalance, hasTokenAccount, validAddress } from '../wallet/rpc'
+import { friendlyError } from '../lib/errors'
+import { confirmSignature, getRentExemption, getSolBalance, hasTokenAccount, validAddress } from '../wallet/rpc'
 import { useAssets, type Asset } from '../wallet/useAssets'
 import { useWallet } from '../wallet/WalletContext'
 
@@ -80,7 +81,7 @@ export default function Send() {
         setReview({ asset, to: recipient, amount, fee, accountRent: rent })
       }
     } catch (e) {
-      setError(friendly(e))
+      setError(friendlyError(e))
     } finally {
       setBusy(false)
     }
@@ -95,11 +96,12 @@ export default function Send() {
         review.asset.id === 'sol'
           ? await service.sendSol(accountIndex, review.to, review.amount)
           : await service.transferToken(accountIndex, review.asset.id, review.to, review.amount)
+      await confirmSignature(res.hash)
       setSig(res.hash)
       void qc.invalidateQueries({ queryKey: ['assets', address] })
       void qc.invalidateQueries({ queryKey: ['history', address] })
     } catch (e) {
-      setError(friendly(e))
+      setError(friendlyError(e))
     } finally {
       setBusy(false)
     }
@@ -225,11 +227,4 @@ function Row({ k, v }: { k: string; v: React.ReactNode }) {
       <dd className="text-right">{v}</dd>
     </div>
   )
-}
-
-function friendly(e: unknown): string {
-  const msg = e instanceof Error ? e.message : String(e)
-  if (/insufficient funds|0x1\b/i.test(msg)) return 'Insufficient funds for this transfer.'
-  if (/blockhash/i.test(msg)) return 'The network was busy. Please try again.'
-  return msg.length > 200 ? msg.slice(0, 200) + '…' : msg
 }

@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Onboarding from './pages/Onboarding'
 import Receive from './pages/Receive'
 import Send from './pages/Send'
+import Swap from './pages/Swap'
 import Settings from './pages/Settings'
 import Unlock from './pages/Unlock'
 import { useWallet, WalletProvider } from './wallet/WalletContext'
@@ -24,6 +25,7 @@ function Gate() {
       <Route element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="send" element={<Send />} />
+        <Route path="swap" element={<Swap />} />
         <Route path="receive" element={<Receive />} />
         <Route path="activity" element={<Activity />} />
         <Route path="settings" element={<Settings />} />

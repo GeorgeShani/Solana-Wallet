@@ -6,6 +6,7 @@ import { useWallet } from '../wallet/WalletContext'
 const NAV = [
   { to: '/', label: 'Wallet', end: true },
   { to: '/send', label: 'Send' },
+  { to: '/swap', label: 'Swap' },
   { to: '/receive', label: 'Receive' },
   { to: '/activity', label: 'Activity' },
   { to: '/settings', label: 'Settings' },
@@ -18,7 +19,7 @@ export default function Layout() {
     <div className="mx-auto flex min-h-screen max-w-xl flex-col px-4 pb-10">
       <header className="flex items-center justify-between gap-3 py-5">
         <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-accent to-accent2" />
+          <div className="h-7 w-7 rounded-lg bg-linear-to-br from-accent to-accent2" />
           <span className="font-bold tracking-tight">Solana Wallet</span>
           <span className="rounded-full border border-accent2/40 px-2 py-0.5 text-[10px] font-semibold uppercase text-accent2">
             {CLUSTER}
@@ -41,7 +42,7 @@ export default function Layout() {
             ))}
             <option value="new">+ New account</option>
           </select>
-          <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={lock}>
+          <button className="btn-ghost px-3! py-1.5! text-xs" onClick={lock}>
             Lock
           </button>
         </div>

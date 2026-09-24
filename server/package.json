@@ -1,9 +1,22 @@
 {
-  "name": "server",
+  "name": "@wallet/server",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --hot src/index.ts",
+    "start": "bun run src/index.ts",
+    "test": "bun test"
   },
   "dependencies": {
+    "@solana/addresses": "3.0.3",
+    "@solana/keys": "3.0.3",
+    "@solana/rpc": "3.0.3",
+    "@solana/signers": "3.0.3",
+    "@solana/transaction-messages": "3.0.3",
+    "@solana/transactions": "3.0.3",
+    "@tetherto/wdk-wallet-solana": "1.0.0-beta.15",
+    "@wallet/program-client": "workspace:*",
+    "@wallet/shared": "workspace:*",
     "hono": "^4.13.9"
   },
   "devDependencies": {

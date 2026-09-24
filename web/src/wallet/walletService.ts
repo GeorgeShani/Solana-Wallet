@@ -1,4 +1,6 @@
 import WalletManagerSolana, { type WalletAccountSolana } from '@tetherto/wdk-wallet-solana'
+import type { Instruction } from '@solana/instructions'
+import { toTransactionMessage } from '@wallet/program-client'
 import { RPC_URL } from '../config'
 
 /**
@@ -42,6 +44,14 @@ export class WalletService {
 
   async transferToken(index: number, token: string, recipient: string, amount: bigint) {
     return (await this.account(index)).transfer({ token, recipient, amount })
+  }
+
+  /**
+   * Sign and broadcast an arbitrary set of instructions with this account as fee payer.
+   * Returns as soon as the network accepts it; call confirmSignature() to wait for the result.
+   */
+  async sendInstructions(index: number, instructions: Instruction[]) {
+    return (await this.account(index)).sendTransaction(toTransactionMessage(instructions))
   }
 
   dispose() {

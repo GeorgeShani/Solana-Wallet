@@ -2,7 +2,10 @@ import { address, isAddress } from '@solana/addresses'
 import { signature } from '@solana/keys'
 import { createSolanaRpc } from '@solana/rpc'
 import { lamports } from '@solana/rpc-types'
-import { RPC_URL } from '../config'
+import { PROGRAM_ADDRESS } from '@wallet/program-client'
+import { WSOL_MINT } from '@wallet/shared'
+import { RPC_URL, TOKEN_ACCOUNT_SIZE } from '../config'
+import { TransactionFailedError } from '../lib/errors'
 
 export const rpc = createSolanaRpc(RPC_URL)
 
@@ -62,6 +65,32 @@ export async function hasTokenAccount(owner: string, mint: string): Promise<bool
   return res.value.length > 0
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * Wait until the network has confirmed `sig`. Throws TransactionFailedError if it was included
+ * but failed (WDK only broadcasts; without this a failed swap would look like a success).
+ */
+export async function confirmSignature(sig: string, timeoutMs = 60_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    const { value } = await rpc.getSignatureStatuses([signature(sig)]).send()
+    const status = value[0]
+    if (status?.err) throw new TransactionFailedError(status.err)
+    if (status && (status.confirmationStatus === 'confirmed' || status.confirmationStatus === 'finalized')) return
+    await sleep(1000)
+  }
+  throw new Error('Timed out waiting for the network to confirm this transaction. It may still go through; check Activity.')
+}
+
+/** Raw data of several accounts in one request (null for accounts that don't exist). */
+export async function getAccountsData(addresses: string[]): Promise<(Uint8Array | null)[]> {
+  const { value } = await rpc
+    .getMultipleAccounts(addresses.map((a) => address(a)), { encoding: 'base64', commitment: 'confirmed' })
+    .send()
+  return value.map((v) => (v ? Uint8Array.from(atob(v.data[0]), (c) => c.charCodeAt(0)) : null))
+}
+
 const rentCache = new Map<bigint, Promise<bigint>>()
 
 /** Rent-exempt minimum for an account with `dataLength` bytes, as currently set by the cluster. */
@@ -86,7 +115,7 @@ export interface HistoryItem {
   /** Net SOL change for the owner, fee included (lamports). */
   solDelta: bigint
   tokenDeltas: { mint: string; delta: bigint; decimals: number }[]
-  kind: 'sent' | 'received' | 'other'
+  kind: 'sent' | 'received' | 'swap' | 'other'
 }
 
 interface RawTokenBalance {
@@ -131,9 +160,24 @@ export async function getHistory(owner: string, limit = 15): Promise<HistoryItem
       }
       const tokenDeltas = [...perMint].map(([mint, v]) => ({ mint, ...v })).filter((d) => d.delta !== 0n)
 
+      const failed = tx.meta.err != null
+
+      // A swap through our program moves two assets. Show both legs, with the SOL leg cleaned of
+      // the network fee and of rent paid to open new token accounts, so 0.5 SOL in reads as 0.5.
+      if (keys.includes(String(PROGRAM_ADDRESS)) && !failed) {
+        const opened = post.filter(
+          (b) => b.owner === owner && !pre.some((p) => p.accountIndex === b.accountIndex),
+        ).length
+        const feePaid = idx === 0 ? BigInt(tx.meta.fee) : 0n
+        const rent = opened > 0 ? BigInt(opened) * (await getRentExemption(TOKEN_ACCOUNT_SIZE)) : 0n
+        const solLeg = solDelta + feePaid + rent
+        const legs = solLeg !== 0n ? [...tokenDeltas, { mint: WSOL_MINT, delta: solLeg, decimals: 9 }] : tokenDeltas
+        return { ...base, failed, solDelta, tokenDeltas: legs, kind: 'swap' }
+      }
+
       const net = tokenDeltas.length ? tokenDeltas[0].delta : solDelta
       const kind = net > 0n ? 'received' : net < 0n ? 'sent' : 'other'
-      return { ...base, failed: tx.meta.err != null, solDelta, tokenDeltas, kind }
+      return { ...base, failed, solDelta, tokenDeltas, kind }
     }),
   )
   return items

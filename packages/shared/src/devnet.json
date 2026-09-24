@@ -1,0 +1,52 @@
+{
+  "programId": "6rAZLb32wv86p3uhqQQCZpDxn4BYiFBX7tqPvw7HpD27",
+  "tokens": [
+    {
+      "mint": "So11111111111111111111111111111111111111112",
+      "symbol": "SOL",
+      "name": "Solana",
+      "decimals": 9
+    },
+    {
+      "mint": "19wY9kjM8ijyUhjhT2vRBkcpBsXLG8HRMvrNXXQEkdB",
+      "symbol": "tUSDC",
+      "name": "Test USD Coin",
+      "decimals": 6
+    },
+    {
+      "mint": "GPPuV9NiNaAtB3UjXFKU94EUkoFbmQtf8aB5BsrPgaMS",
+      "symbol": "tBONK",
+      "name": "Test Bonk",
+      "decimals": 5
+    }
+  ],
+  "pools": [
+    {
+      "pool": "49QyqY8BFbZpnPxS94xxSFa5YCxLuKawfR66TyE2sF1A",
+      "mintA": "19wY9kjM8ijyUhjhT2vRBkcpBsXLG8HRMvrNXXQEkdB",
+      "mintB": "So11111111111111111111111111111111111111112",
+      "lpMint": "BjCKhFfW9K8d6zcXeKAHQJ6xJjtWiUvUX9C7y2rDTAn1",
+      "vaultA": "GxMh9wyhoUyeD6NAtjNizKHdi1r9oNUyGTAhStS1fQZJ",
+      "vaultB": "JBgKMX7zzQrinZP8NkK53s983xRscp6mHBvA3CmwfxiE",
+      "feeBps": 30
+    },
+    {
+      "pool": "71ZXFrojqJdQ1N4abrpE4zVyztqcQ4gU4u7GMujue6rP",
+      "mintA": "So11111111111111111111111111111111111111112",
+      "mintB": "GPPuV9NiNaAtB3UjXFKU94EUkoFbmQtf8aB5BsrPgaMS",
+      "lpMint": "64MrEQfott1qoKzehzfvQqTNP5bBAErJVyMZ4ouKEGPs",
+      "vaultA": "6khaFVeEUTp72gPB8sJ5f6Wog7sGZQ6E2wsEzi4MHnQg",
+      "vaultB": "BQ66pn67SGmocQiXZJzyGENHuur8ut9XyaFkkh93zcHz",
+      "feeBps": 30
+    },
+    {
+      "pool": "E4U2SVRfiSFFZzFSCd6rFbasmRoVwvfXkJWdNixEFgVk",
+      "mintA": "19wY9kjM8ijyUhjhT2vRBkcpBsXLG8HRMvrNXXQEkdB",
+      "mintB": "GPPuV9NiNaAtB3UjXFKU94EUkoFbmQtf8aB5BsrPgaMS",
+      "lpMint": "4zpytmjUE22UymED9sFmtbCw3svPNeobT74hVVWFSns2",
+      "vaultA": "7YKvfiSfQAntg7nTnWB5oDR1RqAt2yaU6xbCUqgzHGdN",
+      "vaultB": "ZQzMxuYjnbwirHaMqiueALTEMFJz8dFwp1wpqBaLPJX",
+      "feeBps": 30
+    }
+  ]
+}

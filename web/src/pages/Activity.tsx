@@ -1,8 +1,29 @@
 import { useQuery } from '@tanstack/react-query'
+import { WSOL_MINT } from '@wallet/shared'
 import { explorerTx, tokenByMint } from '../config'
 import { formatUnits, shortAddr } from '../lib/format'
-import { getHistory } from '../wallet/rpc'
+import { getHistory, type HistoryItem } from '../wallet/rpc'
 import { useWallet } from '../wallet/WalletContext'
+
+type Delta = HistoryItem['tokenDeltas'][number]
+
+function fmt(t: Delta): string {
+  const symbol = t.mint === WSOL_MINT ? 'SOL' : (tokenByMint(t.mint)?.symbol ?? shortAddr(t.mint, 3))
+  return `${t.delta > 0n ? '+' : ''}${formatUnits(t.delta, t.decimals, 6)} ${symbol}`
+}
+
+function describe(h: HistoryItem): { label: string; amount: string } {
+  if (h.failed) return { label: 'Failed', amount: '—' }
+  if (h.kind === 'swap') {
+    // spent leg first, received leg second
+    const legs = [...h.tokenDeltas].sort((a, b) => (a.delta < b.delta ? -1 : 1))
+    return { label: 'Swap', amount: legs.map(fmt).join(' → ') }
+  }
+  const tok = h.tokenDeltas[0]
+  const amount = tok ? fmt(tok) : `${h.solDelta > 0n ? '+' : ''}${formatUnits(h.solDelta, 9, 6)} SOL`
+  const label = h.kind === 'sent' ? 'Sent' : h.kind === 'received' ? 'Received' : 'Interaction'
+  return { label, amount }
+}
 
 export default function Activity() {
   const { address } = useWallet()
@@ -25,14 +46,9 @@ export default function Activity() {
       {data?.length === 0 && <p className="text-sm text-muted">No transactions yet.</p>}
       <ul className="divide-y divide-line">
         {data?.map((h) => {
-          const tok = h.tokenDeltas[0]
-          const info = tok ? tokenByMint(tok.mint) : undefined
-          const amount = tok
-            ? `${tok.delta > 0n ? '+' : ''}${formatUnits(tok.delta, tok.decimals, 6)} ${info?.symbol ?? shortAddr(tok.mint, 3)}`
-            : `${h.solDelta > 0n ? '+' : ''}${formatUnits(h.solDelta, 9, 6)} SOL`
-          const label = h.failed ? 'Failed' : h.kind === 'sent' ? 'Sent' : h.kind === 'received' ? 'Received' : 'Interaction'
+          const { label, amount } = describe(h)
           return (
-            <li key={h.signature} className="flex items-center justify-between py-3">
+            <li key={h.signature} className="flex items-center justify-between gap-3 py-3">
               <div>
                 <div className={`text-sm font-medium ${h.failed ? 'text-red-400' : ''}`}>{label}</div>
                 <a
@@ -44,8 +60,8 @@ export default function Activity() {
                   {h.blockTime ? new Date(h.blockTime * 1000).toLocaleString() : shortAddr(h.signature, 6)}
                 </a>
               </div>
-              <div className={`text-sm font-medium ${h.kind === 'received' && !h.failed ? 'text-accent2' : ''}`}>
-                {h.failed ? '—' : amount}
+              <div className={`text-right text-sm font-medium ${h.kind === 'received' && !h.failed ? 'text-accent2' : ''}`}>
+                {amount}
               </div>
             </li>
           )
