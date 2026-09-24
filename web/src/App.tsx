@@ -5,11 +5,13 @@ import Activity from './pages/Activity'
 import Claim from './pages/Claim'
 import Dashboard from './pages/Dashboard'
 import Links from './pages/Links'
+import Locks from './pages/Locks'
 import Onboarding from './pages/Onboarding'
 import Receive from './pages/Receive'
 import Send from './pages/Send'
 import Swap from './pages/Swap'
 import Settings from './pages/Settings'
+import Stealth from './pages/Stealth'
 import Unlock from './pages/Unlock'
 import { useWallet, WalletProvider } from './wallet/WalletContext'
 
@@ -29,6 +31,8 @@ function Gate() {
         <Route path="send" element={<Send />} />
         <Route path="swap" element={<Swap />} />
         <Route path="links" element={<Links />} />
+        <Route path="locks" element={<Locks />} />
+        <Route path="stealth" element={<Stealth />} />
         <Route path="receive" element={<Receive />} />
         <Route path="activity" element={<Activity />} />
         <Route path="settings" element={<Settings />} />

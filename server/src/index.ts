@@ -4,6 +4,7 @@ import { createApp } from './app'
 import { loadConfig } from './config'
 import { createAnnouncementStore, createFaucetStore, openDatabase } from './db'
 import { createPriceService } from './prices'
+import { DEVNET } from '@wallet/shared'
 
 const config = loadConfig()
 const wallet = await createServerWallet(config)
@@ -19,7 +20,7 @@ const app = createApp({
   prices: createPriceService(),
   announcements: {
     store: announcementStore,
-    indexer: createIndexer({ store: announcementStore, source: createProgramSource(config.rpcUrl) }),
+    indexer: createIndexer({ store: announcementStore, source: createProgramSource(config.rpcUrl), since: DEVNET.announcementsSince }),
   },
 })
 

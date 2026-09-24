@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { INACTIVITY_LOCK_MS } from '../config'
 import { decryptSeed, encryptSeed } from './vaultCrypto'
@@ -40,6 +41,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [addresses, setAddresses] = useState<string[]>([])
   const [accountIndex, setAccountIndex] = useState(0)
   const serviceRef = useRef<WalletService | null>(null)
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     loadVault()
@@ -61,10 +63,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const lock = useCallback(() => {
     serviceRef.current?.dispose()
     serviceRef.current = null
+    // private-payment keys are cached under 'stealth' queries: drop them so nothing secret outlives the unlock
+    queryClient.removeQueries({ queryKey: ['stealth'] })
     setService(null)
     setAddresses([])
     setStatus((s) => (s === 'unlocked' ? 'locked' : s))
-  }, [])
+  }, [queryClient])
 
   const createWallet = useCallback(
     async (seed: string, password: string) => {

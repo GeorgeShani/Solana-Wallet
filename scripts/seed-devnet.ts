@@ -235,7 +235,7 @@ for (const { plan, tx, ty, addrs } of planned) {
 
 // ------------------------------------------------------------------ 4. write config
 
-const config: DevnetConfig = { programId: existing.programId, tokens: [...tokens.values()], pools }
+const config: DevnetConfig = { ...existing, tokens: [...tokens.values()], pools }
 writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2) + '\n')
 console.log(`\nWrote ${CONFIG_FILE}`)
 console.log(`Mint authority for the test tokens: ${adminAddress}`)

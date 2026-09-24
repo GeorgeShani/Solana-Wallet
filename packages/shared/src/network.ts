@@ -24,6 +24,8 @@ export interface PoolConfig {
 
 export interface DevnetConfig {
   programId: string
+  /** Unix seconds when the program version that emits stealth announcements was deployed. */
+  announcementsSince?: number
   tokens: SwapToken[]
   pools: PoolConfig[]
 }

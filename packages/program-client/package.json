@@ -11,6 +11,10 @@
     "@solana/transaction-messages": "3.0.3",
     "@wallet/shared": "workspace:*",
     "@solana/rpc-types": "3.0.3",
-    "@solana/transactions": "3.0.3"
+    "@solana/transactions": "3.0.3",
+    "@solana/keys": "3.0.3"
+  },
+  "devDependencies": {
+    "@noble/curves": "^2.4.0"
   }
 }

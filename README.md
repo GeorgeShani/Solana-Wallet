@@ -1,6 +1,6 @@
 # Solana Wallet
 
-A self-custodial crypto wallet for **Solana devnet**, built as a project for a Solana course. It holds SOL, SPL tokens and (soon) NFTs, and lets you **send**, **swap**, and **send by link**. Swaps and links run on our own on-chain program written in Rust with Anchor.
+A self-custodial crypto wallet for **Solana devnet**, built as a project for a Solana course. It holds SOL, SPL tokens and (soon) NFTs, and lets you **send**, **swap**, **send by link**, **lock funds until a date** and **receive privately** with stealth addresses. Swaps, links, locks and stealth announcements run on our own on-chain program written in Rust with Anchor.
 
 > **Devnet only.** Every token in this project is a free test token with no real value. Do not put real funds or a real seed phrase into it.
 
@@ -13,8 +13,8 @@ A self-custodial crypto wallet for **Solana devnet**, built as a project for a S
 | 2 | Anchor AMM program deployed to devnet, **Swap** UI | Done |
 | 3 | Hono backend: test-token faucet, price feed, fee relayer | Done |
 | 4 | **Claim links**: private "send by link" payments | Done |
-| 5 | Time-locked / vesting transfers | Planned |
-| 6 | Stealth addresses | Planned |
+| 5 | **Locks**: time-locked / vesting transfers | Done |
+| 6 | **Stealth addresses** and the announcement indexer | Done (see the verification note below) |
 | 7 | NFT gallery + mint | Planned |
 | 8 | Polish, docs | Planned |
 
@@ -48,7 +48,22 @@ A self-custodial crypto wallet for **Solana devnet**, built as a project for a S
 - On the **Links** page, lock SOL or any SPL token behind a link. The link is `…/claim#<secret>`. Send it to someone and they open it, paste **any address**, and claim. They need no SOL and no wallet, and you never need to know their address.
 - The sender picks an expiry (1 hour to 30 days). After it the link can't be claimed, but the sender can **cancel** it at any time and get the funds and deposits back.
 - The **Claim** page is public and works without a wallet. It shows the amount and sender, checks the link on-chain, and reports clearly if the link was already claimed, cancelled, expired or malformed.
-- **What "private" means here (honestly):** the secret lives after the `#`, which browsers never send to any server, and only the matching *public* key goes on-chain. The sender does not reveal or need the recipient's address when sending. But the payment is still visible on-chain: an observer can see that a deposit into an escrow account was later paid out to some address, and can link the two if they watch the escrow. For unlinkable payments see the stealth-address phase (planned).
+- **What "private" means here (honestly):** the secret lives after the `#`, which browsers never send to any server, and only the matching *public* key goes on-chain. The sender does not reveal or need the recipient's address when sending. But the payment is still visible on-chain: an observer can see that a deposit into an escrow account was later paid out to some address, and can link the two if they watch the escrow. For unlinkable payments see stealth addresses below.
+
+**Locks (Phase 5)**
+
+- On the **Locks** page, send SOL or any token so that it **unlocks at a date** (all at once) or **vests gradually** between a start and an end, optionally with a cliff before which nothing is available. Presets such as "unlock in 5 minutes" make it easy to try.
+- The recipient sees incoming locks with a progress bar and can **withdraw what has unlocked so far**, any time, in as many steps as they like.
+- A lock can be made **cancellable**. Cancelling pays the recipient what they have earned up to that moment and returns the rest to the sender; the schedule is frozen at that point, so a cancel can never take back anything already earned. Non-cancellable locks can't be undone by anyone: that is the point.
+- SOL is wrapped into wSOL and unwrapped inside the same transaction, so locks are token-only on-chain. The sender pays the rent for the lock's accounts and gets it back when the lock is closed.
+
+**Stealth addresses (Phase 6)**
+
+- On the **Stealth** page you get a public **stealth address** (`stealth:…`). Anyone can pay to it, but every payment goes to a **fresh one-time address** that only you can link to yourself. Two payments to you look unrelated on a block explorer.
+- **Paying** someone's stealth address works for SOL and tokens. The payment and a small public note (the *announcement*) go in one transaction.
+- **Receiving:** the wallet reads the announcements from the backend, tests each one with your scan key, and lists the ones meant for you under "Private payments to you".
+- **Withdrawing:** the one-time address holds your money and only you can sign for it. Withdraw sends it to an address you choose; the one-time address pays its own fee, so nothing else is needed.
+- **What "private" means here (honestly):** an observer can't tell who a stealth payment is for. But the *sender* is visible, and if you sweep the money straight into your main wallet you re-link it yourself. For real privacy, spend from the one-time address or move it to a fresh address. This is a learning implementation and has not been audited.
 
 ## Tech stack
 
@@ -71,36 +86,39 @@ Solana-Wallet/
 │   ├── idl/              wallet_program.json, the program's machine-readable interface (committed)
 │   └── programs/wallet_program/
 │       ├── src/
-│       │   ├── lib.rs          the ten instructions
-│       │   ├── math.rs         pure pool arithmetic, unit-tested
-│       │   ├── state.rs        Pool and ClaimLink accounts
+│       │   ├── lib.rs          the fourteen instructions
+│       │   ├── math.rs         pure pool and vesting arithmetic, unit-tested
+│       │   ├── state.rs        Pool, ClaimLink and Timelock accounts
 │       │   ├── constants.rs    seeds, fee limits
 │       │   ├── error.rs        custom errors
-│       │   └── instructions/   init_pool, liquidity, swap, claim_sol, claim_token
-│       └── tests/              test_amm.rs (21) and test_claim_links.rs (14), run in LiteSVM
+│       │   └── instructions/   init_pool, liquidity, swap, claim_sol, claim_token, timelock, stealth
+│       └── tests/              test_amm.rs (21), test_claim_links.rs (14), test_timelocks.rs (13), run in LiteSVM
 ├── web/                  React app (the wallet UI)
 │   └── src/
 │       ├── wallet/       WalletContext, WDK wrapper, vault crypto/storage, RPC helpers
 │       ├── swap/         pool reserves and quoting, swap transaction builder
 │       ├── links/        link secrets, on-chain link reads, create/cancel/claim builders
-│       ├── pages/        Onboarding, Unlock, Dashboard, Send, Swap, Links, Claim, Receive, Activity, Settings
+│       ├── locks/        lock schedules, on-chain lock reads, create/withdraw/cancel builders
+│       ├── stealth/      paying a stealth address, scanning announcements, withdrawing
+│       ├── pages/        Onboarding, Unlock, Dashboard, Send, Swap, Links, Locks, Stealth, Claim, Receive, Activity, Settings
 │       ├── components/   Layout, CopyButton
-│       ├── lib/          number formatting, error translation
+│       ├── lib/          number formatting, error translation, a ticking clock hook
 │       ├── api.ts        client for the backend
 │       ├── shims/        browser stand-in for a Node-only WDK dependency
 │       └── config.ts     network, RPC URL, known tokens, explorer links
 ├── server/               Hono backend
 │   └── src/
 │       ├── app.ts            wires routes, CORS and error handling
-│       ├── routes/           faucet.ts, relay.ts
+│       ├── routes/           faucet.ts, relay.ts, announcements.ts
 │       ├── relayPolicy.ts    what the relayer will and will not pay for
+│       ├── announcements.ts  indexer that reads stealth announcements from program logs
 │       ├── prices.ts         cached SOL/USD
 │       ├── admin.ts          the server wallet (WDK) and chain adapters
-│       ├── db.ts             SQLite faucet history
-│       └── rateLimit.ts, config.ts, types.ts, index.ts
+│       ├── db.ts             SQLite: faucet history and the announcement index
+│       └── retry.ts, rateLimit.ts, config.ts, types.ts, index.ts
 ├── packages/             code shared by web, scripts and server
-│   ├── shared/           AMM math in TypeScript, devnet addresses (devnet.json)
-│   └── program-client/   typed client for the program: PDAs, instruction builders, decoders
+│   ├── shared/           AMM and vesting math, stealth-address cryptography, devnet addresses (devnet.json)
+│   └── program-client/   typed client for the program: PDAs, instruction builders, decoders, raw-scalar signing
 ├── scripts/              seed-devnet.ts: creates the test tokens and pools
 └── keys/                 git-ignored: the server wallet's seed phrase
 ```
@@ -149,6 +167,23 @@ A link is backed by a `ClaimLink` account (a PDA seeded by the link's public key
 - **Minimum amount**: a SOL link must cover the rent of a new account (checked against the cluster's current rent), because the recipient may not have an account yet.
 - **Cancelling is always allowed.** Expiry only ends the claiming window, so a sender is never locked out of their money.
 
+### Locks (timelocks and vesting)
+
+A `Timelock` account (a PDA seeded by sender, recipient and a caller-chosen seed) owns a vault token account holding the locked tokens.
+
+| Instruction | What it does |
+| --- | --- |
+| `create_timelock(amount, start, cliff, end, cancellable, seed)` | Moves the tokens into the vault and records the schedule. Rejects schedules that are empty, backwards, or already over. |
+| `withdraw_timelock` | The recipient takes `vested(now) − already withdrawn`. When everything is out, the accounts are closed. Fails with `NothingToWithdraw` if nothing is available yet. |
+| `cancel_timelock` | Only if the lock was created cancellable, and only by the sender. Pays the recipient what they have earned, returns the rest to the sender and closes the accounts. |
+
+- **Vesting is linear.** Before the cliff nothing is available; after it the amount grows evenly until the end. "Unlock on a date" is the special case where the cliff and the end are the same moment. The same formula lives in Rust (`math.rs`) and TypeScript (`packages/shared/src/vesting.ts`) so the UI shows what the program will pay.
+- **Time comes from the chain's clock**, not from the browser, so it can't be faked. The tests warp the clock to check before, during and after every schedule.
+
+### Stealth announcements
+
+`announce(ephemeral, stealth, view_tag)` does nothing except emit a `StealthAnnouncement` event, a public note saying "a payment to `stealth` was made, here is the sender's one-time public key and a one-byte hint". It has no state and holds no funds; it exists so the backend can find payments by reading the program's logs instead of scanning every transaction on Solana.
+
 Other design notes: classic SPL Token only (no Token-2022), and large accounts are boxed to stay under the Solana VM's 4 KB stack limit. The program is built for size (`opt-level = "s"`) so an upgrade fits in a modest devnet balance.
 
 ## The backend
@@ -159,6 +194,9 @@ Other design notes: classic SPL Token only (no Token-2022), and large accounts a
 | `GET /prices` | `{ solUsd, updatedAt, stale }`, from CoinGecko, cached for 60 seconds. Serves the last good price (marked stale) if a refresh fails. |
 | `GET /faucet/info`, `POST /faucet {address}` | Mints the test tokens. One claim per address per 24 hours, at most 5 per IP per day, plus a per-minute limit. |
 | `GET /relay/info`, `POST /relay {transaction}` | Co-signs and broadcasts a claim transaction as its fee payer. |
+| `GET /announcements?after=<id>&limit=<n>` | The stealth announcements the indexer has found, oldest first, plus `latestId`. Rate limited. |
+
+**The announcement indexer** reads the program's transaction history, parses `Program data:` log lines into announcements and stores them in SQLite. It remembers how far it got, so a restart resumes where it stopped, and it retries when the RPC answers "429 too many requests". Only history newer than `announcementsSince` in `devnet.json` (when the announcing program version was deployed) is read, which keeps the first run cheap. Everything it serves is already public on-chain; the backend learns nothing about who a payment is for, because the check is done in your browser with your private scan key.
 
 **The relayer is the sensitive part.** A fee payer that signs whatever it's handed would be drained in minutes, so it accepts one narrow shape only: **one claim instruction of our program, optionally with creating the recipient's token account.** Anything else is refused: transfers, swaps, other programs, two claims, address lookup tables, or a transaction where the relayer's address appears as an account of the claim. Every other signer must already have signed, requests are rate limited per IP, and it stops accepting work when its balance runs low. The policy is covered by unit tests that build real signed transactions for each attack.
 
@@ -213,14 +251,25 @@ An upgrade must hold the whole new binary in a temporary buffer (refunded afterw
 ### Tests and checks
 
 ```bash
-bun test                 # 75 TypeScript tests across web, server, packages
+bun test                 # 141 TypeScript tests across web, server, packages
 bun run build:web        # type-check + production build
 bun run --cwd web lint
 ```
 
-The Rust side has 8 unit tests (pool arithmetic) and 35 LiteSVM integration tests (21 for swaps, 14 for claim links), run with `cargo test` as above.
+The Rust side has 12 unit tests (pool and vesting arithmetic) and 48 LiteSVM integration tests (21 for swaps, 14 for claim links, 13 for locks and announcements), run with `cargo test` as above.
 
-Everything was also verified end to end in a real browser against devnet, with each result cross-checked from the Solana CLI: SOL and token sends, swaps in every direction, the faucet, and claim links. That covers a SOL link and a token link claimed by a recipient with 0 SOL (the relayer paid the fee and opened the token account), a link that can't be claimed twice, a malformed link, and cancelling a link.
+Everything was also verified end to end in a real browser against devnet, with each result cross-checked from the Solana CLI: SOL and token sends, swaps in every direction, the faucet, and claim links. That covers a SOL link and a token link claimed by a recipient with 0 SOL (the relayer paid the fee and opened the token account), a link that can't be claimed twice, a malformed link, and cancelling a link. Locks were verified the same way (token and SOL locks, early withdrawal refused, partial and final withdrawals, a cancel that froze the schedule at what the recipient had earned, accounts closed and nothing lost). For stealth, a private SOL payment to the wallet's own stealth address was published on-chain and served by `/announcements`; the indexer, the cryptography and the sweep transaction are unit-tested, but the in-browser scan-and-withdraw round trip and the token payment path have only been exercised by those tests so far.
+
+## How stealth addresses work
+
+The maths is Ed25519 (the curve Solana addresses live on), in `packages/shared/src/stealth.ts`.
+
+1. **Your two keys.** From your seed the wallet derives a *spend* key `s` and a *scan* key `v` at paths `m/44'/501'/7777'/0'/0'` and `…/7777'/0'/1'`. Their public halves `S = s·G` and `V = v·G` together are your stealth address (`stealth:` + base58 of both).
+2. **Paying.** The sender picks a random `r`, publishes `R = r·G`, and computes a shared secret `r·V`. The one-time address is `P = S + H(r·V)·G`, where `H` is a hash.
+3. **Finding a payment.** You compute the same secret as `v·R` (equal to `r·V`, because `r·v·G` is the same point either way), so you get the same `P`. Nobody without `v` can. A one-byte **view tag** (part of the hash) lets you skip 255 out of 256 announcements without doing the full maths.
+4. **Spending.** The private key of `P` is `p = s + H(v·R)`. It's a raw scalar rather than a normal seed, so `packages/program-client/src/scalarSigned.ts` signs with it directly; the signature verifies with the standard Ed25519 check, so the network sees an ordinary transaction.
+
+Safety details covered by tests: a stealth address made of an all-zero or small-order point is rejected (it would be spendable by anyone), announcements with such ephemeral keys are ignored, and the sweep is checked to verify under the normal signature rules.
 
 ## How the wallet works
 
@@ -239,14 +288,14 @@ Everything was also verified end to end in a real browser against devnet, with e
 
 ## Roadmap
 
-1. **Time-locked and vesting transfers (Phase 5).** Funds that unlock for a recipient at a date, or linearly over time, enforced by the program.
-2. **Stealth addresses (Phase 6).** One-time addresses so payments can't be linked to your main address.
-3. **NFT gallery and minting (Phase 7).**
-4. **Later.** A liquidity page in the UI (the program already supports it), multi-hop swap routing, and an announcement indexer in the backend for stealth payments.
+1. **NFT gallery and minting (Phase 7).**
+2. **Polish (Phase 8).**
+3. **Later.** A liquidity page in the UI (the program already supports it) and multi-hop swap routing.
 
 ## Security notes
 
 - Devnet only, with no real value at stake. Not audited; do not use it for real funds.
 - The encrypted vault is only as strong as your password.
-- Anyone who has your recovery phrase controls your funds, and anyone who has a claim link controls the funds behind it until it is claimed or cancelled.
+- Anyone who has your recovery phrase controls your funds, and anyone who has a claim link controls the funds behind it until it is claimed or cancelled. Your stealth keys come from the same phrase, so restoring the phrase restores your stealth payments too.
+- Stealth payments made before the wallet's scan started (or before `announcementsSince`) won't be found, and the scan only knows what the backend has indexed.
 - Program keypairs (`anchor/target/deploy/*-keypair.json`), the server wallet's seed (`keys/`), `server/data/` and `.env` files are git-ignored. Never commit them.

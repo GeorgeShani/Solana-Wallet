@@ -57,6 +57,11 @@ export function createIndexer(deps: {
   source: ProgramSource
   /** Don't hit the RPC again if the last run finished this recently. */
   minIntervalMs?: number
+  /**
+   * Unix seconds. Transactions older than this are ignored without being fetched: announcements
+   * can't exist before the program version that emits them was deployed.
+   */
+  since?: number
   now?: () => number
 }): Indexer {
   const minInterval = deps.minIntervalMs ?? 5_000
@@ -68,12 +73,14 @@ export function createIndexer(deps: {
     const cursor = deps.store.getCursor() ?? undefined
 
     // Newest-first pages until we reach the cursor (or the look-back limit).
+    const isNew = (s: SignatureInfo) => deps.since === undefined || s.blockTime === null || s.blockTime >= deps.since
     const fresh: SignatureInfo[] = []
     let before: string | undefined
     for (let page = 0; page < MAX_PAGES; page++) {
       const batch = await deps.source.listSignatures({ before, until: cursor, limit: PAGE })
-      fresh.push(...batch)
-      if (batch.length < PAGE) break
+      fresh.push(...batch.filter(isNew))
+      // pages are newest first: once one contains something too old, nothing further back matters
+      if (batch.length < PAGE || !batch.every(isNew)) break
       before = batch[batch.length - 1].signature
     }
     if (fresh.length === 0) return

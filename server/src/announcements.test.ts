@@ -124,6 +124,17 @@ describe('announcement indexer', () => {
     expect(fake.calls.list).toBe(2)
   })
 
+  test('skips history older than `since` without fetching it', async () => {
+    // block times are 1000 + index: only transactions from index 3 on are recent enough
+    const txs = Array.from({ length: 6 }, (_, i) => ({ sig: `t${i}`, logs: [eventLine(EPH[i % 3], STEALTH[i % 3], i)] }))
+    const store = createAnnouncementStore(openDatabase(':memory:'))
+    const fake = fakeSource(txs)
+    const indexer = createIndexer({ store, source: fake.source, minIntervalMs: 0, since: 1003 })
+    await indexer.refresh()
+    expect(fake.calls.logs.sort()).toEqual(['t3', 't4', 't5'])
+    expect(store.since(0, 10).map((r) => r.signature)).toEqual(['t3', 't4', 't5'])
+  })
+
   test('the store ignores rows it already has', () => {
     const store = createAnnouncementStore(openDatabase(':memory:'))
     const row = { signature: 'x', blockTime: 1, ephemeral: EPH[0], stealth: STEALTH[0], viewTag: 1 }

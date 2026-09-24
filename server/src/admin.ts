@@ -13,6 +13,7 @@ import {
 } from '@wallet/program-client'
 import type { ProgramSource } from './announcements'
 import type { Config } from './config'
+import { withRetry } from './retry'
 import type { Chain, Minter, Relayer } from './types'
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -49,14 +50,16 @@ export function createProgramSource(rpcUrl: string): ProgramSource {
   const rpc = createSolanaRpc(rpcUrl)
   return {
     async listSignatures({ before, until, limit }) {
-      const res = await rpc
-        .getSignaturesForAddress(PROGRAM_ADDRESS, {
-          limit,
-          before: before ? signature(before) : undefined,
-          until: until ? signature(until) : undefined,
-          commitment: 'confirmed',
-        })
-        .send()
+      const res = await withRetry(() =>
+        rpc
+          .getSignaturesForAddress(PROGRAM_ADDRESS, {
+            limit,
+            before: before ? signature(before) : undefined,
+            until: until ? signature(until) : undefined,
+            commitment: 'confirmed',
+          })
+          .send(),
+      )
       return res.map((s) => ({
         signature: String(s.signature),
         err: s.err,
@@ -64,9 +67,11 @@ export function createProgramSource(rpcUrl: string): ProgramSource {
       }))
     },
     async getLogs(sig) {
-      const tx = await rpc
-        .getTransaction(signature(sig), { encoding: 'json', maxSupportedTransactionVersion: 0, commitment: 'confirmed' })
-        .send()
+      const tx = await withRetry(() =>
+        rpc
+          .getTransaction(signature(sig), { encoding: 'json', maxSupportedTransactionVersion: 0, commitment: 'confirmed' })
+          .send(),
+      )
       return tx?.meta?.logMessages ? [...tx.meta.logMessages] : null
     },
   }

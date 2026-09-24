@@ -48,3 +48,18 @@ export const getRelayFeePayer = async () => (await request<{ feePayer: string }>
 /** Sends a transaction (signed by everyone except the fee payer) to be co-signed and broadcast. */
 export const relayTransaction = async (base64: string) =>
   (await request<{ signature: string }>('/relay', { method: 'POST', body: JSON.stringify({ transaction: base64 }) })).signature
+
+export interface AnnouncementItem {
+  id: number
+  signature: string
+  blockTime: number | null
+  /** The sender's ephemeral public key (base58 of 32 bytes). */
+  ephemeral: string
+  /** The one-time address that was paid. */
+  stealth: string
+  viewTag: number
+}
+
+/** The public feed of stealth-payment announcements (everyone downloads the same feed). */
+export const getAnnouncements = (after: number, limit = 1000) =>
+  request<{ items: AnnouncementItem[]; latestId: number }>(`/announcements?after=${after}&limit=${limit}`)

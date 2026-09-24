@@ -8,6 +8,8 @@ const NAV = [
   { to: '/send', label: 'Send' },
   { to: '/swap', label: 'Swap' },
   { to: '/links', label: 'Links' },
+  { to: '/locks', label: 'Locks' },
+  { to: '/stealth', label: 'Stealth' },
   { to: '/receive', label: 'Receive' },
   { to: '/activity', label: 'Activity' },
   { to: '/settings', label: 'Settings' },

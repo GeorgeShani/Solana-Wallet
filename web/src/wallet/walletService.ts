@@ -1,7 +1,16 @@
 import WalletManagerSolana, { type WalletAccountSolana } from '@tetherto/wdk-wallet-solana'
 import type { Instruction } from '@solana/instructions'
 import { toTransactionMessage } from '@wallet/program-client'
+import { publicKeyToAddress, stealthKeysFromSeeds, type StealthKeys } from '@wallet/shared'
 import { RPC_URL } from '../config'
+
+/**
+ * Dedicated derivation paths for the wallet's stealth (private-payment) keys. WDK prepends
+ * m/44'/501'/ itself. Ordinary accounts use two segments (`{index}'/0'`), so these three-segment
+ * paths can never collide with an account.
+ */
+const STEALTH_SPEND_PATH = "7777'/0'/0'"
+const STEALTH_SCAN_PATH = "7777'/0'/1'"
 
 /**
  * Thin wrapper over Tether WDK's Solana wallet. The seed phrase lives only in
@@ -10,6 +19,7 @@ import { RPC_URL } from '../config'
 export class WalletService {
   private manager: WalletManagerSolana
   private accounts = new Map<number, WalletAccountSolana>()
+  private stealth?: Promise<StealthKeys>
 
   constructor(seed: string) {
     this.manager = new WalletManagerSolana(seed, { provider: RPC_URL, commitment: 'confirmed' })
@@ -54,7 +64,36 @@ export class WalletService {
     return (await this.account(index)).sendTransaction(toTransactionMessage(instructions))
   }
 
+  /**
+   * The wallet's stealth keys (one identity per seed phrase, shared by all accounts), derived from
+   * two WDK accounts at dedicated paths. Cached while the wallet is unlocked.
+   */
+  getStealthKeys(): Promise<StealthKeys> {
+    this.stealth ??= (async () => {
+      const seedAt = async (path: string) => {
+        const account = await this.manager.getAccountByPath(path)
+        const privateKey = account.keyPair.privateKey
+        if (!privateKey) throw new Error('Could not derive the stealth keys')
+        const seed = Uint8Array.from(privateKey) // copy before dispose() wipes the original
+        const address = await account.getAddress()
+        account.dispose()
+        return { seed, address }
+      }
+      const [spend, scan] = [await seedAt(STEALTH_SPEND_PATH), await seedAt(STEALTH_SCAN_PATH)]
+      const keys = stealthKeysFromSeeds(spend.seed, scan.seed)
+      // Our curve maths must reproduce the public keys WDK itself derived, or something is wrong.
+      if (publicKeyToAddress(keys.spendPub) !== spend.address || publicKeyToAddress(keys.scanPub) !== scan.address) {
+        throw new Error('Stealth key derivation does not match the wallet keys')
+      }
+      return keys
+    })()
+    // don't cache a failure
+    this.stealth.catch(() => (this.stealth = undefined))
+    return this.stealth
+  }
+
   dispose() {
+    this.stealth = undefined
     for (const a of this.accounts.values()) a.dispose()
     this.accounts.clear()
     this.manager.dispose()

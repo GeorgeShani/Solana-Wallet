@@ -1,4 +1,4 @@
-import { address, getProgramDerivedAddress, type Address } from '@solana/addresses'
+import { getProgramDerivedAddress, type Address } from '@solana/addresses'
 import type { Instruction } from '@solana/instructions'
 import { appendTransactionMessageInstructions, createTransactionMessage } from '@solana/transaction-messages'
 import { concat, i64, readI64, readU64, u16, u64 } from './encoding'
@@ -319,3 +319,4 @@ export function toTransactionMessage(instructions: Instruction[]) {
   return appendTransactionMessageInstructions(instructions, createTransactionMessage({ version: 0 }))
 }
 export * from './claimTx'
+export * from './scalarSigned'
