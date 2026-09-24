@@ -3,8 +3,9 @@
   "private": true,
   "workspaces": ["web", "server", "packages/*"],
   "scripts": {
-    "dev:web": "bun --cwd web run dev",
-    "dev:server": "bun --cwd server run dev",
+    "dev:web": "bun run --cwd web dev",
+    "dev:server": "bun run --cwd server dev",
+    "build:web": "bun run --cwd web build",
     "test": "bun test"
   }
 }

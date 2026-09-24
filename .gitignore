@@ -10,3 +10,6 @@ keys/
 anchor/target/
 anchor/.anchor/
 server/data/
+
+# Local tooling
+.claude/
