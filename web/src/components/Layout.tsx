@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { CLUSTER } from '../config'
 import { shortAddr } from '../lib/format'
 import { Rosette } from '../ui/Guilloche'
+import { LogoMark } from '../ui/Logo'
 import { useWallet } from '../wallet/WalletContext'
 
 interface Tab {
@@ -43,7 +44,7 @@ export default function Layout() {
 
   return (
     <div className="stage">
-      <Rosette seed={address ?? 'wallet'} layers={4} detail={140} className="stage-wallpaper" />
+      <LogoMark tone="inherit" className="stage-wallpaper" />
       <p className="stage-microtext" aria-hidden>
         Solana devnet · test tokens have no value
       </p>

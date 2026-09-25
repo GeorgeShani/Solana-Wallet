@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react'
+import { LogoMark } from '../ui/Logo'
 
 /** Catches a crash in any screen so people see a calm message and a way out, not a blank page. */
 export default class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -17,6 +18,7 @@ export default class ErrorBoundary extends Component<{ children: ReactNode }, { 
     return (
       <div className="grid min-h-full place-items-center bg-paper p-6 text-center">
         <div className="max-w-xs space-y-4">
+          <LogoMark className="mx-auto size-20" />
           <h1 className="numeral text-3xl">Something went wrong</h1>
           <p className="text-sm text-muted">
             The wallet hit an unexpected problem. Your money and recovery phrase are safe. Reloading usually fixes it.

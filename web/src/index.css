@@ -119,16 +119,17 @@ input[type='checkbox'] {
     var(--color-plate-deep);
 }
 
-.stage-wallpaper {
+.stage .stage-wallpaper {
   position: absolute;
   inset: 50% auto auto 50%;
-  width: max(140vmin, 900px);
+  width: max(125vmin, 820px);
   aspect-ratio: 1;
   translate: -50% -50%;
   fill: none;
   stroke: #46c6bd;
-  stroke-width: 0.4;
-  opacity: 0.24;
+  /* the logo, enormous and faint: in the drawing's own units, so this is about a pixel and a half on screen */
+  stroke-width: 0.2;
+  opacity: 0.11;
   pointer-events: none;
 }
 

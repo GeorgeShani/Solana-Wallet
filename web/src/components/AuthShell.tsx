@@ -1,16 +1,15 @@
 import type { ReactNode } from 'react'
-import { Rosette } from '../ui/Guilloche'
 import { LogoMark } from '../ui/Logo'
 
 /**
  * The wallet's front door: the same note-on-plate frame as the app, with the logo printing itself.
  * Used before there is a wallet (create/import), while it is locked, and on the public claim page.
- * The logo is always the same mark; only the plate wallpaper behind the frame may vary.
+ * The logo is always the same mark, on the frame and as the wallpaper on the plate behind it.
  */
-export default function AuthShell({ title, subtitle, children, wallpaperSeed = 'solana wallet' }: { title: string; subtitle?: string; children: ReactNode; wallpaperSeed?: string }) {
+export default function AuthShell({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   return (
     <div className="stage">
-      <Rosette seed={wallpaperSeed} layers={4} detail={140} className="stage-wallpaper" />
+      <LogoMark tone="inherit" className="stage-wallpaper" />
       <p className="stage-microtext" aria-hidden>
         Solana devnet · test tokens have no value
       </p>

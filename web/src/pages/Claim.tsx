@@ -72,7 +72,7 @@ export default function Claim() {
   const expired = link ? timeLeft(link.expiry) === 'Expired' : false
 
   return (
-    <AuthShell title="Claim your funds" subtitle={`Solana ${CLUSTER} · test tokens only`} wallpaperSeed={secret?.claimKey ?? 'claim'}>
+    <AuthShell title="Claim your funds" subtitle={`Solana ${CLUSTER} · test tokens only`}>
       <div className="space-y-5">
         {secretQuery.isLoading || (secret && linkQuery.isLoading) ? (
           <p className="text-center text-sm text-muted">Checking the link…</p>

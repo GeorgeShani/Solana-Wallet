@@ -2,7 +2,7 @@ import { ExternalLink } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { explorerTx } from '../config'
 import { shortAddr } from '../lib/format'
-import { Rosette } from './Guilloche'
+import { LogoMark } from './Logo'
 
 export interface ReceiptLine {
   label: string
@@ -10,8 +10,8 @@ export interface ReceiptLine {
 }
 
 /**
- * The result of a confirmed transaction, printed like a note: a seal drawn from the transaction's
- * own signature, then each line struck onto the sheet in turn. Nothing here can be faked by the
+ * The result of a confirmed transaction, printed like a note: the logo prints itself as the seal, then
+ * each line is struck onto the sheet in turn. Nothing here can be faked by the
  * page: the signature is a real one, and the explorer link lets anyone check it.
  */
 export default function Receipt({
@@ -31,7 +31,7 @@ export default function Receipt({
     <div className="rise space-y-5">
       <div className="banknote receipt-edge px-5 pt-6 pb-8 text-center" role="status">
         <div className="relative mx-auto mb-3 size-24 text-plate">
-          <Rosette seed={signature ?? title} layers={3} detail={50} draw className="size-full" />
+          <LogoMark draw className="size-full" />
           <span className="absolute inset-[27%] grid place-items-center rounded-full bg-note">
             <svg viewBox="0 0 24 24" className="size-7 text-ok" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M5 12.5l4.2 4.2L19 7" pathLength={1} className="draw-check" />

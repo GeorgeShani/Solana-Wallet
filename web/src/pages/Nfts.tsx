@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { shortAddr } from '../lib/format'
 import { fetchNfts, nftsKey } from '../nft/chain'
 import NftImage from '../nft/NftImage'
-import { Rosette } from '../ui/Guilloche'
+import { LogoMark } from '../ui/Logo'
 import { useWallet } from '../wallet/WalletContext'
 
 export default function Nfts() {
@@ -41,7 +41,7 @@ export default function Nfts() {
 
       {data?.length === 0 && (
         <div className="rise flex flex-col items-center py-8 text-center">
-          <Rosette seed="empty nft shelf" layers={3} detail={70} draw className="mb-5 size-28 text-plate" />
+          <LogoMark draw className="mb-5 size-28" />
           <h2 className="numeral text-2xl">Nothing collected yet</h2>
           <p className="mt-2 max-w-[32ch] text-sm text-muted">
             An NFT is a one-of-a-kind digital item that you own, like a collectible card. Make your first one from any picture.

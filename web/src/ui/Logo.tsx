@@ -1,9 +1,13 @@
 import { BRAND_NAME, LOGO_LAYERS, LOGO_SEED } from './brand'
 import { Rosette } from './Guilloche'
 
-/** The mark: the fixed logo rosette. Size it with `size-*`; it takes the teal line ink unless you set a `text-*`. */
-export function LogoMark({ draw, detail = 140, className = '' }: { draw?: boolean; detail?: number; className?: string }) {
-  return <Rosette seed={LOGO_SEED} layers={LOGO_LAYERS} detail={detail} draw={draw} className={`text-plate ${className}`} />
+/**
+ * The mark: the fixed logo rosette. Size it with `size-*`.
+ *  - `draw` true: it prints itself line by line (the animated logo). Leave it off for the plain, static SVG.
+ *  - `tone`: the teal line ink by default; 'inherit' lets the caller colour it.
+ */
+export function LogoMark({ draw, detail = 140, tone = 'plate', className = '' }: { draw?: boolean; detail?: number; tone?: 'plate' | 'inherit'; className?: string }) {
+  return <Rosette seed={LOGO_SEED} layers={LOGO_LAYERS} detail={detail} draw={draw} className={`${tone === 'plate' ? 'text-plate ' : ''}${className}`} />
 }
 
 /** The mark with the product name beside it, for headers and footers. */

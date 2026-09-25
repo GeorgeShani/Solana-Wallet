@@ -161,7 +161,7 @@ export default function Dashboard() {
           Assets
         </h2>
         {isLoading && <p className="py-3 text-sm text-muted">Loading your balances…</p>}
-        {error && <p className="py-3 text-sm text-serial">Could not load balances from the network. Retrying…</p>}
+        {error && !assets && <p className="py-3 text-sm text-serial">Could not load balances from the network. Retrying…</p>}
         <ul className="divide-y divide-line border-y border-line">
           {assets?.map((a) => (
             <li key={a.id} className="flex items-center justify-between gap-3 py-3">
