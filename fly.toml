@@ -1,0 +1,49 @@
+# Fly.io configuration for the backend (server/).
+# Deploy from the REPO ROOT:   fly deploy
+#
+# One-time setup (see README "Hosting it"):
+#   fly volumes create wallet_data --region fra --size 1        # the persistent disk for /data
+#   fly secrets set ADMIN_SEED="..." CORS_ORIGINS="https://your-frontend.example"
+# ADMIN_SEED is a secret, so it is set with `fly secrets`, never written in this file.
+
+app = 'solana-wallet-backend'
+primary_region = 'fra'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  # Not secret, so they live here. Fly sends traffic to internal_port below.
+  PORT = '8080'
+  DB_PATH = '/data/wallet.db'
+  NFT_DIR = '/data/nft'
+  # This app's public address; it is written into every NFT's metadata link.
+  PUBLIC_URL = 'https://solana-wallet-backend.fly.dev'
+  # Use your own RPC key here if the public endpoint rate-limits (or set it with `fly secrets set RPC_URL=...`).
+  RPC_URL = 'https://api.devnet.solana.com'
+
+# The SQLite database and NFT pictures. A volume belongs to ONE machine, so keep a single machine.
+[mounts]
+  source = 'wallet_data'
+  destination = '/data'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Keep one machine running so the first request is not a cold start, and never run more than one
+  # (the SQLite file and the in-memory rate limits assume a single process).
+  auto_stop_machines = 'off'
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    grace_period = '20s'
+    interval = '30s'
+    timeout = '5s'
+    method = 'GET'
+    path = '/health'
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1

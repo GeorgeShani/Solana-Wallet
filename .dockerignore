@@ -1,0 +1,29 @@
+# Keep the image small and never ship secrets or local data.
+.git
+.claude
+.impeccable
+node_modules
+**/node_modules
+**/dist
+
+# secrets and local state
+keys
+.env
+.env.*
+**/.env
+**/.env.*
+server/data
+
+# not needed by the backend (the Dockerfile only reads these workspaces' package.json)
+web/*
+!web/package.json
+scripts/*
+!scripts/package.json
+docs
+anchor/target
+anchor/.anchor
+anchor/programs
+README.md
+fly.toml
+Dockerfile
+.dockerignore

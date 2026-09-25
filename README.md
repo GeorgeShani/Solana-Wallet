@@ -302,7 +302,30 @@ Safety details covered by tests: a stealth address made of an all-zero or small-
 | --- | --- | --- |
 | **On-chain program** | Solana **devnet** (already deployed) | Nothing to host: it lives on the network. Keep it on devnet for a demo. Mainnet needs an audit and real SOL for rent, so it is not recommended for this project. |
 | **Frontend** (`web/`) | Vercel, Netlify or Cloudflare Pages (all free) | It builds to static files (`bun run build:web`, output `web/dist`). Add a rewrite of every path to `index.html` (the `/claim` link needs it). Set `VITE_API_URL` to the backend's address and `VITE_RPC_URL` to a devnet RPC with its own key (free tiers from Helius or QuickNode), because the public endpoint rate-limits. |
-| **Backend** (`server/`) | Railway or Fly.io, with a persistent volume | It needs a disk (SQLite database and the NFT pictures) and a long-running process, so serverless platforms and free tiers that sleep or wipe their disk are a poor fit. Mount a volume and point `DB_PATH` and `NFT_DIR` at it. Set `ADMIN_SEED` as a secret, `CORS_ORIGINS` to the frontend's address, `PUBLIC_URL` to the backend's own public HTTPS address, and `RPC_URL`. Keep the server wallet funded with a little devnet SOL. |
+| **Backend** (`server/`) | Fly.io (steps below) or Railway, with a persistent volume | It needs a disk (SQLite database and the NFT pictures) and a long-running process, so serverless platforms and free tiers that sleep or wipe their disk are a poor fit. Mount a volume and point `DB_PATH` and `NFT_DIR` at it. Set `ADMIN_SEED` as a secret, `CORS_ORIGINS` to the frontend's address, `PUBLIC_URL` to the backend's own public HTTPS address, and `RPC_URL`. Keep the server wallet funded with a little devnet SOL. |
+
+### Deploying the backend to Fly.io
+
+The repo root has a `Dockerfile`, `.dockerignore` and `fly.toml` written for this monorepo (Bun runtime, whole repo as the build context, because the server imports `packages/*` and the IDL). Don't use the files Fly's "Launch" generates inside `server/`: they use Node and npm, which cannot install `workspace:*` packages, and they only see the `server/` folder.
+
+```bash
+fly volumes create wallet_data --region fra --size 1      # the persistent disk (once)
+fly secrets set ADMIN_SEED="twelve words ..." CORS_ORIGINS="https://your-project.vercel.app"
+fly deploy                                                # run from the repo root
+```
+
+`fly.toml` already sets `PORT`, `DB_PATH`, `NFT_DIR`, `PUBLIC_URL` and a `/health` check, keeps exactly one machine running (the SQLite file and rate limits assume one process), and mounts the volume at `/data`. Change `PUBLIC_URL` if your app name differs from `solana-wallet-backend`. If you deploy through Fly's GitHub integration instead of the CLI, leave the working directory as the repo root.
+
+### Deploying the frontend to Vercel
+
+`web/vercel.json` holds the build settings, the rewrite that makes `/claim` links work, and security and cache headers. In Vercel: **Add New Project**, import the repo, and set **Root Directory** to `web` (leave "Include source files outside of the Root Directory" on, the build installs the whole workspace). Then add two environment variables and deploy:
+
+| Name | Value |
+| --- | --- |
+| `VITE_API_URL` | `https://solana-wallet-backend.fly.dev` (your Fly address) |
+| `VITE_RPC_URL` | your devnet RPC URL (restrict its key to your Vercel domain) |
+
+After the first deploy, put the real Vercel address into the backend's `CORS_ORIGINS` (`fly secrets set CORS_ORIGINS=...`). CORS matches the exact address, so Vercel's per-branch preview URLs are refused by the backend; list them too, comma separated, if you want to test on previews.
 
 ### Production settings
 
