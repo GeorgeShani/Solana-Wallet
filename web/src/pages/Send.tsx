@@ -1,10 +1,11 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { explorerTx, SYSTEM_ACCOUNT_SIZE, TOKEN_ACCOUNT_SIZE } from '../config'
+import { SYSTEM_ACCOUNT_SIZE, TOKEN_ACCOUNT_SIZE } from '../config'
 import { formatUnits, parseUnits, shortAddr } from '../lib/format'
 import { friendlyError } from '../lib/errors'
 import { confirmSignature, getRentExemption, getSolBalance, hasTokenAccount, validAddress } from '../wallet/rpc'
+import Receipt from '../ui/Receipt'
 import { useAssets, type Asset } from '../wallet/useAssets'
 import { useWallet } from '../wallet/WalletContext'
 
@@ -117,24 +118,22 @@ export default function Send() {
 
   if (sig && review) {
     return (
-      <div className="card space-y-4 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent2/15 text-2xl text-accent2">✓</div>
-        <h2 className="text-lg font-semibold">Sent</h2>
-        <p className="text-sm text-muted">
-          {formatUnits(review.amount, review.asset.decimals)} {review.asset.symbol} to {shortAddr(review.to, 6)}
-        </p>
-        <a className="block text-sm text-accent underline" href={explorerTx(sig)} target="_blank" rel="noreferrer">
-          View on Solana Explorer
-        </a>
-        <div className="flex gap-2">
-          <button className="btn-ghost flex-1" onClick={reset}>
-            Send another
-          </button>
-          <Link to="/" className="btn-primary flex-1">
-            Done
-          </Link>
-        </div>
-      </div>
+      <Receipt
+        title="Sent"
+        signature={sig}
+        lines={[
+          { label: 'Amount', value: `${formatUnits(review.amount, review.asset.decimals)} ${review.asset.symbol}` },
+          { label: 'To', value: <span className="serial break-all">{shortAddr(review.to, 6)}</span> },
+          { label: 'Network fee', value: `${formatUnits(review.fee, 9)} SOL` },
+        ]}
+      >
+        <button className="btn-ghost flex-1" onClick={reset}>
+          Send another
+        </button>
+        <Link to="/" className="btn-primary flex-1">
+          Done
+        </Link>
+      </Receipt>
     )
   }
 
@@ -143,24 +142,28 @@ export default function Send() {
     const createsAccount = review.accountRent > 0n
     const totalSol = (isSol ? review.amount : 0n) + review.fee + review.accountRent
     return (
-      <div className="card space-y-4">
-        <h2 className="font-semibold">Review</h2>
+      <div className="space-y-5">
+        <h2 className="text-lg font-semibold">Review your payment</h2>
         <dl className="space-y-3 text-sm">
           <Row k="Amount" v={`${formatUnits(review.amount, review.asset.decimals)} ${review.asset.symbol}`} />
-          <Row k="To" v={<span className="break-all font-mono text-xs">{review.to}</span>} />
+          <Row k="To" v={<span className="break-all font-serial text-xs">{review.to}</span>} />
           <Row k="Network fee" v={`${formatUnits(review.fee, 9)} SOL`} />
           {createsAccount && <Row k="New token account" v={`${formatUnits(review.accountRent, 9)} SOL`} />}
-          <div className="border-t border-line pt-3">
+          <div className="border-t border-dashed border-line pt-3">
             <Row k="Total SOL out" v={<b>{formatUnits(totalSol, 9)} SOL</b>} />
           </div>
         </dl>
         {createsAccount && (
-          <p className="rounded-lg bg-white/5 p-3 text-xs text-muted">
+          <p className="rounded-[6px] bg-plate/6 p-3 text-xs text-muted">
             The recipient doesn't have a {review.asset.symbol} account yet, so this transfer creates one. That one-time
             rent deposit is paid by you.
           </p>
         )}
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && (
+          <p className="text-sm text-serial" role="alert">
+            {error}
+          </p>
+        )}
         <div className="flex gap-2">
           <button className="btn-ghost flex-1" disabled={busy} onClick={() => setReview(null)}>
             Back
@@ -174,11 +177,12 @@ export default function Send() {
   }
 
   return (
-    <div className="card space-y-4">
-      <h2 className="font-semibold">Send</h2>
+    <div className="space-y-5">
       <div>
-        <label className="label">Asset</label>
-        <select className="input" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
+        <label className="label" htmlFor="asset">
+          What to send
+        </label>
+        <select id="asset" className="input" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
           {assets?.map((a) => (
             <option key={a.id} value={a.id}>
               {a.symbol}: {formatUnits(a.balance, a.decimals, 6)}
@@ -187,9 +191,12 @@ export default function Send() {
         </select>
       </div>
       <div>
-        <label className="label">Recipient address</label>
+        <label className="label" htmlFor="to">
+          Send to
+        </label>
         <input
-          className="input font-mono"
+          id="to"
+          className="input font-serial text-[13px]"
           placeholder="Solana address"
           autoComplete="off"
           spellCheck={false}
@@ -199,20 +206,27 @@ export default function Send() {
       </div>
       <div>
         <div className="flex items-end justify-between">
-          <label className="label">Amount</label>
-          <button type="button" className="mb-1.5 text-xs text-accent" onClick={setMax}>
-            Max
+          <label className="label" htmlFor="amount">
+            Amount
+          </label>
+          <button type="button" className="link mb-1.5 text-xs" onClick={setMax}>
+            Use max
           </button>
         </div>
         <input
-          className="input"
+          id="amount"
+          className="input num"
           inputMode="decimal"
           placeholder="0.0"
           value={amountText}
           onChange={(e) => setAmountText(e.target.value)}
         />
       </div>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && (
+          <p className="text-sm text-serial" role="alert">
+            {error}
+          </p>
+        )}
       <button className="btn-primary w-full" disabled={busy || !to || !amountText || !asset} onClick={prepare}>
         {busy ? 'Checking…' : 'Review'}
       </button>

@@ -2,7 +2,8 @@ import { address, isAddress } from '@solana/addresses'
 import { signature } from '@solana/keys'
 import { createSolanaRpc } from '@solana/rpc'
 import { lamports } from '@solana/rpc-types'
-import { PROGRAM_ADDRESS } from '@wallet/program-client'
+import { mapLimit, retry } from '../lib/async'
+import { classifyProgramCall } from './classify'
 import { WSOL_MINT } from '@wallet/shared'
 import { RPC_URL, TOKEN_ACCOUNT_SIZE } from '../config'
 import { TransactionFailedError } from '../lib/errors'
@@ -116,6 +117,8 @@ export interface HistoryItem {
   solDelta: bigint
   tokenDeltas: { mint: string; delta: bigint; decimals: number }[]
   kind: 'sent' | 'received' | 'swap' | 'other'
+  /** What the transaction was for, when it called one of our programs ("Locked funds", "Minted an NFT"). */
+  label?: string
 }
 
 interface RawTokenBalance {
@@ -128,16 +131,26 @@ interface RawTokenBalance {
 /** Recent activity for `owner`, derived from each transaction's pre/post balances. */
 export async function getHistory(owner: string, limit = 15): Promise<HistoryItem[]> {
   const sigs = await rpc.getSignaturesForAddress(address(owner), { limit, commitment: 'confirmed' }).send()
-  const items = await Promise.all(
-    sigs.map(async (s): Promise<HistoryItem> => {
+  // a few at a time, and retried: firing them all at once makes the public RPC answer 429
+  const items = await mapLimit(
+    sigs,
+    4,
+    async (s): Promise<HistoryItem> => {
       const base = { signature: String(s.signature), blockTime: s.blockTime == null ? null : Number(s.blockTime) }
-      const tx = await rpc
-        .getTransaction(signature(String(s.signature)), {
-          encoding: 'jsonParsed',
-          maxSupportedTransactionVersion: 0,
-          commitment: 'confirmed',
-        })
-        .send()
+      let tx
+      try {
+        tx = await retry(() =>
+          rpc
+            .getTransaction(signature(String(s.signature)), {
+              encoding: 'jsonParsed',
+              maxSupportedTransactionVersion: 0,
+              commitment: 'confirmed',
+            })
+            .send(),
+        )
+      } catch {
+        tx = null // still shown, just without amounts, rather than failing the whole list
+      }
       if (!tx || !tx.meta) {
         return { ...base, failed: s.err != null, solDelta: 0n, tokenDeltas: [], kind: 'other' }
       }
@@ -162,9 +175,13 @@ export async function getHistory(owner: string, limit = 15): Promise<HistoryItem
 
       const failed = tx.meta.err != null
 
+      const action = failed
+        ? null
+        : classifyProgramCall(tx.transaction.message.instructions as unknown as { programId: string; data?: string }[])
+
       // A swap through our program moves two assets. Show both legs, with the SOL leg cleaned of
       // the network fee and of rent paid to open new token accounts, so 0.5 SOL in reads as 0.5.
-      if (keys.includes(String(PROGRAM_ADDRESS)) && !failed) {
+      if (action?.swap) {
         const opened = post.filter(
           (b) => b.owner === owner && !pre.some((p) => p.accountIndex === b.accountIndex),
         ).length
@@ -172,13 +189,20 @@ export async function getHistory(owner: string, limit = 15): Promise<HistoryItem
         const rent = opened > 0 ? BigInt(opened) * (await getRentExemption(TOKEN_ACCOUNT_SIZE)) : 0n
         const solLeg = solDelta + feePaid + rent
         const legs = solLeg !== 0n ? [...tokenDeltas, { mint: WSOL_MINT, delta: solLeg, decimals: 9 }] : tokenDeltas
-        return { ...base, failed, solDelta, tokenDeltas: legs, kind: 'swap' }
+        return { ...base, failed, solDelta, tokenDeltas: legs, kind: 'swap', label: action.label }
       }
 
       const net = tokenDeltas.length ? tokenDeltas[0].delta : solDelta
-      const kind = net > 0n ? 'received' : net < 0n ? 'sent' : 'other'
-      return { ...base, failed, solDelta, tokenDeltas, kind }
-    }),
+      let kind: HistoryItem['kind'] = net > 0n ? 'received' : net < 0n ? 'sent' : 'other'
+      let label = action?.label
+      if (action?.direction) kind = action.direction === 'in' ? 'received' : 'sent'
+      if (label === 'Moved an NFT') {
+        // whoever paid for the transfer (the fee payer) is the one who owned it
+        kind = idx === 0 ? 'sent' : 'received'
+        label = idx === 0 ? 'Sent an NFT' : 'Received an NFT'
+      }
+      return { ...base, failed, solDelta, tokenDeltas, kind, label }
+    },
   )
   return items
 }

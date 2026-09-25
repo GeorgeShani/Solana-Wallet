@@ -4,6 +4,7 @@ import { partiallySignTransaction, getTransactionDecoder } from '@solana/transac
 import { createApp, type Deps } from './app'
 import { createAnnouncementStore, createFaucetStore, openDatabase } from './db'
 import { createIndexer } from './announcements'
+import { createMemoryNftStore } from './nftStore'
 import { createRateLimiter } from './rateLimit'
 import { MIN_RELAYER_LAMPORTS } from './routes/relay'
 import { buildTx, claimFixtures, newSigner } from './testUtils'
@@ -49,6 +50,7 @@ async function setup(overrides: Partial<Deps> & { balance?: bigint; minterDelay?
       store: announcementStore,
       indexer: createIndexer({ store: announcementStore, source: { listSignatures: async () => [], getLogs: async () => null } }),
     },
+    nft: { store: createMemoryNftStore(), publicUrl: 'http://localhost:3000' },
     prices: { get: async () => ({ solUsd: 150.25, updatedAt: 1, stale: false }) },
     now: () => clock,
     ...overrides,

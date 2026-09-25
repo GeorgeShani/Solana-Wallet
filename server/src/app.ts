@@ -3,10 +3,12 @@ import { cors } from 'hono/cors'
 import { getConnInfo } from 'hono/bun'
 import type { AnnouncementStore, Indexer } from './announcements'
 import type { FaucetStore } from './db'
+import type { NftStore } from './nftStore'
 import type { PriceService } from './prices'
 import { createRateLimiter, type RateLimiter } from './rateLimit'
 import { announcementRoutes } from './routes/announcements'
 import { faucetRoutes } from './routes/faucet'
+import { nftRoutes } from './routes/nft'
 import { relayRoutes } from './routes/relay'
 import type { Chain, Minter, Relayer } from './types'
 
@@ -18,8 +20,9 @@ export interface Deps {
   faucetStore: FaucetStore
   prices: PriceService
   announcements: { store: AnnouncementStore; indexer: Indexer }
+  nft: { store: NftStore; publicUrl: string }
   /** Override the default limits (tests). */
-  limiters?: { relay?: RateLimiter; faucet?: RateLimiter; announcements?: RateLimiter }
+  limiters?: { relay?: RateLimiter; faucet?: RateLimiter; announcements?: RateLimiter; nft?: RateLimiter }
   now?: () => number
 }
 
@@ -68,6 +71,16 @@ export function createApp(deps: Deps) {
       store: deps.announcements.store,
       indexer: deps.announcements.indexer,
       limiter: deps.limiters?.announcements ?? createRateLimiter({ windowMs: 60_000, max: 60 }),
+      clientIp,
+    }),
+  )
+
+  app.route(
+    '/nft',
+    nftRoutes({
+      store: deps.nft.store,
+      publicUrl: deps.nft.publicUrl,
+      limiter: deps.limiters?.nft ?? createRateLimiter({ windowMs: 60_000, max: 6 }),
       clientIp,
     }),
   )

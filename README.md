@@ -1,6 +1,6 @@
 # Solana Wallet
 
-A self-custodial crypto wallet for **Solana devnet**, built as a project for a Solana course. It holds SOL, SPL tokens and (soon) NFTs, and lets you **send**, **swap**, **send by link**, **lock funds until a date** and **receive privately** with stealth addresses. Swaps, links, locks and stealth announcements run on our own on-chain program written in Rust with Anchor.
+A self-custodial crypto wallet for **Solana devnet**, built as a project for a Solana course. It holds SOL, SPL tokens and NFTs, and lets you **send**, **swap**, **send by link**, **lock funds until a date**, **receive privately** with stealth addresses, and **mint and send NFTs**. Swaps, links, locks and stealth announcements run on our own on-chain program written in Rust with Anchor.
 
 > **Devnet only.** Every token in this project is a free test token with no real value. Do not put real funds or a real seed phrase into it.
 
@@ -14,9 +14,9 @@ A self-custodial crypto wallet for **Solana devnet**, built as a project for a S
 | 3 | Hono backend: test-token faucet, price feed, fee relayer | Done |
 | 4 | **Claim links**: private "send by link" payments | Done |
 | 5 | **Locks**: time-locked / vesting transfers | Done |
-| 6 | **Stealth addresses** and the announcement indexer | Done (see the verification note below) |
-| 7 | NFT gallery + mint | Planned |
-| 8 | Polish, docs | Planned |
+| 6 | **Stealth addresses** and the announcement indexer | Done |
+| 7 | **NFTs**: gallery, mint from a picture, send (Metaplex Core) | Done |
+| 8 | Polish: new design, toasts, crash screen, docs | Done |
 
 ## What works today
 
@@ -65,6 +65,15 @@ A self-custodial crypto wallet for **Solana devnet**, built as a project for a S
 - **Withdrawing:** the one-time address holds your money and only you can sign for it. Withdraw sends it to an address you choose; the one-time address pays its own fee, so nothing else is needed.
 - **What "private" means here (honestly):** an observer can't tell who a stealth payment is for. But the *sender* is visible, and if you sweep the money straight into your main wallet you re-link it yourself. For real privacy, spend from the one-time address or move it to a fresh address. This is a learning implementation and has not been audited.
 
+**NFTs (Phase 7)**
+
+- The **NFTs** tab lists every Metaplex Core NFT the account owns, read straight from devnet (no API key or indexer). **Mint** turns a picture (PNG, JPEG, GIF or WebP up to 2 MB) into an NFT: the backend stores the picture and a small metadata file, the wallet then mints with a link to it. **Send** moves an NFT to another address.
+- The NFT is one small account holding the owner, name and metadata link, so minting costs about 0.002 test SOL. The picture lives on this app's server, so the server's public address (`PUBLIC_URL`) is written into every NFT you mint.
+
+**Design (Phase 8)**
+
+The wallet is drawn as a banknote ("The Engraved Note"): cool bank-note paper on a teal printing plate, one teal line ink, one red serial ink for ids and alerts, and colour-shift foil for "confirmed". Every address (account, token, NFT) prints its own unique guilloche rosette, and every confirmed transaction is a receipt struck line by line. The layout is a Phantom-style 420px app frame with a five-tab bar that fills the screen on a phone. See [`web/PRODUCT.md`](web/PRODUCT.md) for the product brief and the screenshots in [`docs/screenshots/`](docs/screenshots).
+
 ## Tech stack
 
 | Layer | Tools |
@@ -100,7 +109,9 @@ Solana-Wallet/
 │       ├── links/        link secrets, on-chain link reads, create/cancel/claim builders
 │       ├── locks/        lock schedules, on-chain lock reads, create/withdraw/cancel builders
 │       ├── stealth/      paying a stealth address, scanning announcements, withdrawing
-│       ├── pages/        Onboarding, Unlock, Dashboard, Send, Swap, Links, Locks, Stealth, Claim, Receive, Activity, Settings
+│       ├── nft/          Metaplex Core reads, mint and send builders, picture loading
+│       ├── ui/           guilloche patterns, receipts, toasts (the design system)
+│       ├── pages/        Onboarding, Unlock, Dashboard, Send, Swap, Links, Locks, Stealth, Nfts, MintNft, NftDetail, More, Claim, Receive, Activity, Settings
 │       ├── components/   Layout, CopyButton
 │       ├── lib/          number formatting, error translation, a ticking clock hook
 │       ├── api.ts        client for the backend
@@ -109,7 +120,8 @@ Solana-Wallet/
 ├── server/               Hono backend
 │   └── src/
 │       ├── app.ts            wires routes, CORS and error handling
-│       ├── routes/           faucet.ts, relay.ts, announcements.ts
+│       ├── routes/           faucet.ts, relay.ts, announcements.ts, nft.ts
+│       ├── nftStore.ts       where NFT pictures and metadata are kept
 │       ├── relayPolicy.ts    what the relayer will and will not pay for
 │       ├── announcements.ts  indexer that reads stealth announcements from program logs
 │       ├── prices.ts         cached SOL/USD
@@ -119,7 +131,8 @@ Solana-Wallet/
 ├── packages/             code shared by web, scripts and server
 │   ├── shared/           AMM and vesting math, stealth-address cryptography, devnet addresses (devnet.json)
 │   └── program-client/   typed client for the program: PDAs, instruction builders, decoders, raw-scalar signing
-├── scripts/              seed-devnet.ts: creates the test tokens and pools
+├── docs/screenshots/     every screen, desktop and phone width
+├── scripts/              seed-devnet.ts, nft-smoke.ts, stress-backend.ts, e2e-wallet.ts
 └── keys/                 git-ignored: the server wallet's seed phrase
 ```
 
@@ -251,14 +264,24 @@ An upgrade must hold the whole new binary in a temporary buffer (refunded afterw
 ### Tests and checks
 
 ```bash
-bun test                 # 141 TypeScript tests across web, server, packages
+bun test                 # 179 TypeScript tests across web, server, packages
 bun run build:web        # type-check + production build
 bun run --cwd web lint
 ```
 
 The Rust side has 12 unit tests (pool and vesting arithmetic) and 48 LiteSVM integration tests (21 for swaps, 14 for claim links, 13 for locks and announcements), run with `cargo test` as above.
 
-Everything was also verified end to end in a real browser against devnet, with each result cross-checked from the Solana CLI: SOL and token sends, swaps in every direction, the faucet, and claim links. That covers a SOL link and a token link claimed by a recipient with 0 SOL (the relayer paid the fee and opened the token account), a link that can't be claimed twice, a malformed link, and cancelling a link. Locks were verified the same way (token and SOL locks, early withdrawal refused, partial and final withdrawals, a cancel that froze the schedule at what the recipient had earned, accounts closed and nothing lost). For stealth, a private SOL payment to the wallet's own stealth address was published on-chain and served by `/announcements`; the indexer, the cryptography and the sweep transaction are unit-tested, but the in-browser scan-and-withdraw round trip and the token payment path have only been exercised by those tests so far.
+Everything was also verified end to end in a real browser against devnet, with each result cross-checked from the Solana CLI: SOL and token sends, swaps in every direction, the faucet, and claim links. That covers a SOL link and a token link claimed by a recipient with 0 SOL (the relayer paid the fee and opened the token account), a link that can't be claimed twice, a malformed link, and cancelling a link. Locks were verified the same way (token and SOL locks, early withdrawal refused, partial and final withdrawals, a cancel that froze the schedule at what the recipient had earned, accounts closed and nothing lost). Stealth was verified in the browser too: a SOL payment and a token payment to the wallet's own stealth address were found by the scan and swept to a fresh address, with the one-time address paying its own fee and ending at zero. NFTs were minted from a picture in the UI, viewed, sent to a second account and seen in its gallery. A stress pass covered the whole app (see below): it found and fixed a stale-form bug when switching accounts, a misleading empty state while stealth balances loaded, activity labels that called every program call a swap, and public-RPC rate-limit failures in the activity and stealth lists (now throttled and retried).
+
+### Stress tests
+
+```bash
+bun run --cwd scripts stress-backend   # 35 checks: malformed input, rate limits, bursts, uploads, CORS (needs the server running)
+bun run --cwd scripts nft-smoke        # mints an NFT on devnet, finds it by owner, sends it on
+bun run --cwd scripts e2e-wallet       # makes a throwaway test wallet in keys/e2e-seed.txt
+```
+
+In development only, `http://localhost:5173/?e2eSeed=<phrase>` opens a throwaway wallet without the password screen (optionally `&e2eAccount=1`), so screens can be driven and photographed by scripts. It never touches the stored vault and is stripped from production builds.
 
 ## How stealth addresses work
 
@@ -270,6 +293,16 @@ The maths is Ed25519 (the curve Solana addresses live on), in `packages/shared/s
 4. **Spending.** The private key of `P` is `p = s + H(v·R)`. It's a raw scalar rather than a normal seed, so `packages/program-client/src/scalarSigned.ts` signs with it directly; the signature verifies with the standard Ed25519 check, so the network sees an ordinary transaction.
 
 Safety details covered by tests: a stealth address made of an all-zero or small-order point is rejected (it would be spendable by anyone), announcements with such ephemeral keys are ignored, and the sweep is checked to verify under the normal signature rules.
+
+## Hosting it
+
+| Piece | Where | Notes |
+| --- | --- | --- |
+| **On-chain program** | Solana **devnet** (already deployed) | Nothing to host: it lives on the network. Keep it on devnet for a demo. Mainnet needs an audit and real SOL for rent, so it is not recommended for this project. |
+| **Frontend** (`web/`) | Vercel, Netlify or Cloudflare Pages (all free) | It builds to static files (`bun run build:web`, output `web/dist`). Add a rewrite of every path to `index.html` (the `/claim` link needs it). Set `VITE_API_URL` to the backend's address and `VITE_RPC_URL` to a devnet RPC with its own key (free tiers from Helius or QuickNode), because the public endpoint rate-limits. |
+| **Backend** (`server/`) | Railway or Fly.io, with a persistent volume | It needs a disk (SQLite database and the NFT pictures) and a long-running process, so serverless platforms and free tiers that sleep or wipe their disk are a poor fit. Mount a volume and point `DB_PATH` and `NFT_DIR` at it. Set `ADMIN_SEED` as a secret, `CORS_ORIGINS` to the frontend's address, `PUBLIC_URL` to the backend's own public HTTPS address, and `RPC_URL`. Keep the server wallet funded with a little devnet SOL. |
+
+Two things to know before going live: the backend's address is written into every NFT's on-chain link, so choose the final address before minting anything you want to keep; and browsers block an HTTPS site from calling an HTTP backend, so both must be HTTPS.
 
 ## How the wallet works
 

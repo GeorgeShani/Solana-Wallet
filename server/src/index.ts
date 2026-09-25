@@ -3,6 +3,7 @@ import { createIndexer } from './announcements'
 import { createApp } from './app'
 import { loadConfig } from './config'
 import { createAnnouncementStore, createFaucetStore, openDatabase } from './db'
+import { createFileNftStore } from './nftStore'
 import { createPriceService } from './prices'
 import { DEVNET } from '@wallet/shared'
 
@@ -22,6 +23,7 @@ const app = createApp({
     store: announcementStore,
     indexer: createIndexer({ store: announcementStore, source: createProgramSource(config.rpcUrl), since: DEVNET.announcementsSince }),
   },
+  nft: { store: createFileNftStore(config.nftDir), publicUrl: config.publicUrl },
 })
 
 console.log(`Server wallet (fee relayer + faucet minter): ${wallet.address}`)

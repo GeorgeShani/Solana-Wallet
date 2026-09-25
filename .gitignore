@@ -13,3 +13,6 @@ server/data/
 
 # Local tooling
 .claude/
+
+# design tool scratch
+web/.impeccable/

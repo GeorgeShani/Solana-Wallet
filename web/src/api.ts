@@ -18,7 +18,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     res = await fetch(`${API_URL}${path}`, {
       ...init,
-      headers: { 'content-type': 'application/json', ...init?.headers },
+      // a form upload sets its own content type (with the multipart boundary)
+      headers: init?.body instanceof FormData ? init.headers : { 'content-type': 'application/json', ...init?.headers },
     })
   } catch {
     throw new ApiError('Could not reach the wallet server. Is it running?', 0)
@@ -63,3 +64,19 @@ export interface AnnouncementItem {
 /** The public feed of stealth-payment announcements (everyone downloads the same feed). */
 export const getAnnouncements = (after: number, limit = 1000) =>
   request<{ items: AnnouncementItem[]; latestId: number }>(`/announcements?after=${after}&limit=${limit}`)
+
+export interface NftUpload {
+  id: string
+  /** The link that goes on-chain: it returns the NFT's name, description and picture. */
+  metadataUrl: string
+  imageUrl: string
+}
+
+/** Stores an NFT's picture and description on the server. The wallet then mints with the returned link. */
+export function uploadNft(input: { image: File; name: string; description: string }) {
+  const form = new FormData()
+  form.set('image', input.image)
+  form.set('name', input.name)
+  form.set('description', input.description)
+  return request<NftUpload>('/nft', { method: 'POST', body: form })
+}

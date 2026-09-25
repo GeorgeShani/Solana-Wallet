@@ -39,6 +39,7 @@ export function friendlyError(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e)
   if (code === 1 || /insufficient (funds|lamports)|0x1\b/i.test(msg)) return 'Insufficient funds for this transaction.'
   if (/blockhash/i.test(msg)) return 'The network was busy. Please try again.'
+  if (/simulation failed/i.test(msg)) return 'That is no longer possible: things on the network changed since this page loaded. Refresh and try again.'
   if (/user rejected|declined/i.test(msg)) return 'The transaction was cancelled.'
   return msg.length > 200 ? msg.slice(0, 200) + '…' : msg
 }

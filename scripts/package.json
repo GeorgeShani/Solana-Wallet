@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "seed-devnet": "bun run seed-devnet.ts"
+    "seed-devnet": "bun run seed-devnet.ts",
+    "nft-smoke": "bun run nft-smoke.ts",
+    "stress-backend": "bun run stress-backend.ts"
   },
   "dependencies": {
     "@solana/addresses": "3.0.3",

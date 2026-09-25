@@ -1,7 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { vestedAmount, withdrawableAmount, WSOL_MINT } from '@wallet/shared'
 import { useState } from 'react'
-import { explorerTx } from '../config'
 import { friendlyError } from '../lib/errors'
 import { formatUnits, parseUnits, shortAddr } from '../lib/format'
 import { relativeTime, useNow } from '../lib/useNow'
@@ -15,6 +14,7 @@ import {
 } from '../locks/chain'
 import { buildSchedule, CLIFFS, DURATIONS, fromDateTimeLocal, toDateTimeLocal, validateSchedule } from '../locks/schedule'
 import { useTokenMeta } from '../links/useTokenMeta'
+import Receipt from '../ui/Receipt'
 import { confirmSignature, validAddress } from '../wallet/rpc'
 import { useAssets } from '../wallet/useAssets'
 import { useWallet } from '../wallet/WalletContext'
@@ -136,34 +136,26 @@ function CreateLock() {
 
   if (done) {
     return (
-      <div className="card space-y-4 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent2/15 text-2xl text-accent2">✓</div>
-        <h2 className="text-lg font-semibold">Locked</h2>
-        <p className="text-sm text-muted">{done.text}</p>
-        <p className="text-xs text-muted">The recipient sees it under "Incoming" in their wallet and withdraws it as it unlocks.</p>
-        <a className="block text-sm text-accent underline" href={explorerTx(done.sig)} target="_blank" rel="noreferrer">
-          View on Solana Explorer
-        </a>
-        <button className="btn-ghost w-full" onClick={() => setDone(null)}>
+      <Receipt title="Locked" signature={done.sig} lines={[{ label: 'What', value: done.text }]}>
+        <button className="btn-primary flex-1" onClick={() => setDone(null)}>
           Lock something else
         </button>
-      </div>
+      </Receipt>
     )
   }
 
   return (
-    <div className="card space-y-4">
+    <div className="space-y-5">
+      <p className="text-sm text-muted">
+        Set aside SOL or tokens for someone, or for your future self. The program holds them and releases them on a schedule you choose. Nobody can touch them early.
+      </p>
       <div>
-        <h2 className="font-semibold">Lock funds</h2>
-        <p className="mt-1 text-xs text-muted">
-          Set aside SOL or tokens for someone (or for your future self). The program holds them and releases them on
-          a schedule you choose, and no one can touch them early.
-        </p>
-      </div>
-      <div>
-        <label className="label">Recipient address</label>
+        <label className="label" htmlFor="lock-to">
+          Who gets it
+        </label>
         <input
-          className="input font-mono"
+          id="lock-to"
+          className="input font-serial text-[13px]"
           placeholder="Solana address"
           autoComplete="off"
           spellCheck={false}
@@ -173,8 +165,10 @@ function CreateLock() {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="label">Asset</label>
-          <select className="input" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
+          <label className="label" htmlFor="asset">
+            What
+          </label>
+          <select id="asset" className="input" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
             {assets?.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.symbol}: {formatUnits(a.balance, a.decimals, 6)}
@@ -184,12 +178,14 @@ function CreateLock() {
         </div>
         <div>
           <div className="flex items-end justify-between">
-            <label className="label">Amount</label>
-            <button type="button" className="mb-1.5 text-xs text-accent" onClick={setMax}>
-              Max
+            <label className="label" htmlFor="amount">
+              Amount
+            </label>
+            <button type="button" className="link mb-1.5 text-xs" onClick={setMax}>
+              Use max
             </button>
           </div>
-          <input className="input" inputMode="decimal" placeholder="0.0" value={amountText} onChange={(e) => setAmountText(e.target.value)} />
+          <input id="amount" className="input num" inputMode="decimal" placeholder="0.0" value={amountText} onChange={(e) => setAmountText(e.target.value)} />
         </div>
       </div>
 
@@ -205,8 +201,8 @@ function CreateLock() {
             <button
               key={m}
               type="button"
-              className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                mode === m ? 'border-accent bg-accent/15' : 'border-line hover:bg-white/5'
+              className={`rounded-[6px] border px-3 py-2 text-sm font-semibold transition ${
+                mode === m ? 'border-plate bg-plate/10' : 'border-line hover:bg-plate/6'
               }`}
               onClick={() => setMode(m)}
             >
@@ -260,7 +256,7 @@ function CreateLock() {
                 <button
                   key={label}
                   type="button"
-                  className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium hover:bg-white/5"
+                  className="rounded-[6px] border border-line px-3 py-1.5 text-xs font-medium hover:bg-plate/6"
                   onClick={() => quickUnlock(Number(secs))}
                 >
                   {label}
@@ -272,15 +268,19 @@ function CreateLock() {
         )}
       </div>
 
-      <label className="flex items-start gap-2 rounded-lg bg-white/5 p-3 text-xs text-muted">
+      <label className="flex items-start gap-2 rounded-[6px] bg-plate/6 p-3 text-xs text-muted">
         <input type="checkbox" className="mt-0.5" checked={cancellable} onChange={(e) => setCancellable(e.target.checked)} />
         <span>
-          <b className="text-white">Let me cancel it.</b> If you cancel, the part that hasn't unlocked yet comes back to
+          <b className="text-ink">Let me cancel it.</b> If you cancel, the part that hasn't unlocked yet comes back to
           you and the recipient keeps what they've already earned. Leave this off for a lock nobody can undo.
         </span>
       </label>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && (
+        <p className="text-sm text-serial" role="alert">
+          {error}
+        </p>
+      )}
       <button className="btn-primary w-full" disabled={busy || !amountText || !recipient || !asset} onClick={create}>
         {busy ? 'Locking…' : 'Lock funds'}
       </button>
@@ -297,14 +297,14 @@ function LockList(props: {
   role: 'sender' | 'recipient'
 }) {
   return (
-    <div className="card">
-      <h2 className="mb-3 text-sm font-semibold">{props.title}</h2>
+    <section>
+      <h2 className="mb-1 text-[15px] font-semibold">{props.title}</h2>
       {props.loading && <p className="text-sm text-muted">Loading…</p>}
       {props.locks?.length === 0 && <p className="text-sm text-muted">{props.empty}</p>}
-      <ul className="divide-y divide-line">
+      <ul className="divide-y divide-line border-y border-line">
         {props.locks?.map((l) => <LockRow key={l.account} lock={l} role={props.role} />)}
       </ul>
-    </div>
+    </section>
   )
 }
 
@@ -333,6 +333,8 @@ function LockRow({ lock, role }: { lock: TimelockInfo; role: 'sender' | 'recipie
       await confirmSignature(hash)
       void qc.invalidateQueries({ queryKey: ['locks'] })
       void qc.invalidateQueries({ queryKey: ['assets', address] })
+      // the public network's account scans can trail a moment behind: look again shortly
+      setTimeout(() => void qc.invalidateQueries({ queryKey: ['locks'] }), 3_000)
     } catch (e) {
       setError(friendlyError(e))
     } finally {
@@ -351,26 +353,26 @@ function LockRow({ lock, role }: { lock: TimelockInfo; role: 'sender' | 'recipie
     <li className="py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-sm font-medium">{fmt(lock.total)}</div>
+          <div className="num text-sm font-semibold">{fmt(lock.total)}</div>
           <div className="text-xs text-muted">
             {role === 'recipient' ? `from ${shortAddr(lock.sender, 4)}` : `to ${shortAddr(lock.recipient, 4)}`} · {status}
           </div>
         </div>
         {role === 'recipient' ? (
-          <button className="btn-primary !px-3 !py-1.5 text-xs" disabled={busy || available === 0n} onClick={() => run(() => buildWithdrawInstructions(lock))}>
+          <button className="btn-primary px-3! py-1.5! min-h-9! text-xs" disabled={busy || available === 0n} onClick={() => run(() => buildWithdrawInstructions(lock))}>
             {busy ? 'Withdrawing…' : available > 0n ? `Withdraw ${fmt(available)}` : 'Nothing yet'}
           </button>
         ) : lock.cancellable && !finished ? (
           !confirming ? (
-            <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => setConfirming(true)}>
+            <button className="btn-ghost px-3! py-1.5! min-h-9! text-xs" onClick={() => setConfirming(true)}>
               Cancel
             </button>
           ) : (
             <div className="flex gap-2">
-              <button className="btn-ghost !px-3 !py-1.5 text-xs" disabled={busy} onClick={() => setConfirming(false)}>
+              <button className="btn-ghost px-3! py-1.5! min-h-9! text-xs" disabled={busy} onClick={() => setConfirming(false)}>
                 Keep
               </button>
-              <button className="btn-danger !px-3 !py-1.5 text-xs" disabled={busy} onClick={() => run(() => buildCancelLockInstructions(lock))}>
+              <button className="btn-danger px-3! py-1.5! min-h-9! text-xs" disabled={busy} onClick={() => run(() => buildCancelLockInstructions(lock))}>
                 {busy ? 'Cancelling…' : 'Yes, cancel'}
               </button>
             </div>
@@ -380,8 +382,8 @@ function LockRow({ lock, role }: { lock: TimelockInfo; role: 'sender' | 'recipie
         )}
       </div>
 
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
-        <div className="h-full rounded-full bg-gradient-to-r from-accent to-accent2 transition-[width] duration-700" style={{ width: `${pct}%` }} />
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-plate/12" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}>
+        <div className="h-full rounded-full bg-plate transition-[width] duration-700" style={{ width: `${pct}%` }} />
       </div>
       <div className="mt-1 flex justify-between text-[11px] text-muted">
         <span>{pct.toFixed(1)}% unlocked</span>
@@ -392,7 +394,7 @@ function LockRow({ lock, role }: { lock: TimelockInfo; role: 'sender' | 'recipie
           You get back what hasn't unlocked yet. {fmt(vested - lock.withdrawn)} that the recipient has already earned stays theirs.
         </p>
       )}
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-xs text-serial">{error}</p>}
     </li>
   )
 }

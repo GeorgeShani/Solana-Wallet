@@ -5,6 +5,7 @@ import { getAddressEncoder } from '@solana/addresses'
 import { createIndexer, type ProgramSource, type SignatureInfo } from './announcements'
 import { createApp } from './app'
 import { createAnnouncementStore, createFaucetStore, openDatabase } from './db'
+import { createMemoryNftStore } from './nftStore'
 import { createRateLimiter } from './rateLimit'
 import { newSigner } from './testUtils'
 
@@ -160,6 +161,7 @@ describe('GET /announcements', () => {
       faucetStore: createFaucetStore(db),
       prices: { get: async () => ({ solUsd: 1, updatedAt: 1, stale: false }) },
       announcements: { store, indexer },
+      nft: { store: createMemoryNftStore(), publicUrl: 'http://localhost:3000' },
       limiters: { announcements: createRateLimiter({ windowMs: 60_000, max: 1000 }) },
     })
     return app

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import AuthShell from '../components/AuthShell'
 import { useWallet } from '../wallet/WalletContext'
 import { WrongPasswordError } from '../wallet/vaultCrypto'
 
@@ -16,21 +17,20 @@ export default function Unlock() {
     try {
       await unlock(pw)
     } catch (err) {
-      setError(err instanceof WrongPasswordError ? 'Wrong password.' : err instanceof Error ? err.message : 'Failed to unlock')
+      setError(err instanceof WrongPasswordError ? 'That password is not right. Try again.' : err instanceof Error ? err.message : 'Failed to unlock')
       setBusy(false)
     }
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
-      <div className="mb-8 text-center">
-        <div className="mx-auto mb-4 h-14 w-14 rounded-2xl bg-gradient-to-br from-accent to-accent2" />
-        <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
-      </div>
-      <form className="card space-y-4" onSubmit={submit}>
+    <AuthShell title="Welcome back" subtitle="Enter your password to open your wallet." seed="welcome back">
+      <form className="space-y-4" onSubmit={submit}>
         <div>
-          <label className="label">Password</label>
+          <label className="label" htmlFor="pw">
+            Password
+          </label>
           <input
+            id="pw"
             className="input"
             type="password"
             autoFocus
@@ -39,22 +39,26 @@ export default function Unlock() {
             onChange={(e) => setPw(e.target.value)}
           />
         </div>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && (
+          <p className="text-sm text-serial" role="alert">
+            {error}
+          </p>
+        )}
         <button className="btn-primary w-full" disabled={busy || !pw}>
           {busy ? 'Unlocking…' : 'Unlock'}
         </button>
       </form>
 
-      <div className="mt-6 text-center text-xs text-muted">
+      <div className="mt-auto pt-8 text-center text-[13px] text-muted">
         {!confirmReset ? (
-          <button className="underline" onClick={() => setConfirmReset(true)}>
-            Forgot password?
+          <button className="link font-normal!" onClick={() => setConfirmReset(true)}>
+            Forgot your password?
           </button>
         ) : (
           <div className="card space-y-3 text-left">
             <p>
-              The password can't be recovered. You can remove this wallet from the device and re-import it with your
-              recovery phrase. <b className="text-white">Without the phrase, the funds are lost.</b>
+              Passwords can’t be recovered. You can remove this wallet from the device and bring it back with your recovery
+              phrase. <b className="text-ink">Without the phrase, the money is gone for good.</b>
             </p>
             <div className="flex gap-2">
               <button className="btn-ghost flex-1" onClick={() => setConfirmReset(false)}>
@@ -67,6 +71,6 @@ export default function Unlock() {
           </div>
         )}
       </div>
-    </div>
+    </AuthShell>
   )
 }

@@ -6,6 +6,8 @@ import CopyButton from '../components/CopyButton'
 import { explorerAddress, explorerTx, SYSTEM_ACCOUNT_SIZE, TOKEN_ACCOUNT_SIZE, tokenByMint } from '../config'
 import { friendlyError } from '../lib/errors'
 import { formatUnits, parseUnits, shortAddr } from '../lib/format'
+import Receipt from '../ui/Receipt'
+import { useToast } from '../ui/toastContext'
 import { FEE_MARGIN_LAMPORTS, planStealthPayment } from '../stealth/pay'
 import { scanFeed, type FoundPayment } from '../stealth/scan'
 import { sweepStealthAddress } from '../stealth/spend'
@@ -26,7 +28,7 @@ export default function Stealth() {
   })
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-7">
       <MyStealthAddress meta={keys.data ? encodeMetaAddress(keys.data.spendPub, keys.data.scanPub) : null} error={keys.error} />
       <PayPrivately />
       {keys.data && <Incoming keys={keys.data} />}
@@ -36,26 +38,26 @@ export default function Stealth() {
 
 function MyStealthAddress({ meta, error }: { meta: string | null; error: unknown }) {
   return (
-    <div className="card space-y-3">
+    <section className="space-y-3">
       <div>
         <h2 className="font-semibold">Your stealth address</h2>
-        <p className="mt-1 text-xs text-muted">
+        <p className="mt-1 text-[13px] text-muted">
           Share this instead of your normal address. Every payment sent to it lands at a brand-new one-time address that
           nobody can connect to you, and only your wallet can find and spend it.
         </p>
       </div>
       {error ? (
-        <p className="text-sm text-red-400">Could not derive your stealth keys: {friendlyError(error)}</p>
+        <p className="text-sm text-serial">Could not derive your stealth keys: {friendlyError(error)}</p>
       ) : !meta ? (
         <p className="text-sm text-muted">Deriving your keys…</p>
       ) : (
         <>
           <div className="flex gap-3">
-            <div className="shrink-0 rounded-xl bg-white p-2">
-              <QRCodeSVG value={meta} size={104} />
+            <div className="shrink-0 rounded-[4px] bg-white p-2 ring-1 ring-plate/60">
+              <QRCodeSVG value={meta} size={104} fgColor="#052a2d" />
             </div>
             <div className="min-w-0 flex-1 space-y-2">
-              <p className="break-all rounded-lg border border-line bg-ink p-2 font-mono text-[11px] leading-snug" aria-label="Your stealth address">
+              <p className="break-all rounded-[6px] border border-line bg-note p-2 font-serial text-[11px] leading-snug" aria-label="Your stealth address">
                 {meta}
               </p>
               <CopyButton text={meta} label="Copy stealth address" />
@@ -67,7 +69,7 @@ function MyStealthAddress({ meta, error }: { meta: string | null; error: unknown
           </p>
         </>
       )}
-    </div>
+    </section>
   )
 }
 
@@ -138,42 +140,45 @@ function PayPrivately() {
 
   if (done) {
     return (
-      <div className="card space-y-3 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent2/15 text-2xl text-accent2">✓</div>
-        <h2 className="text-lg font-semibold">Sent privately</h2>
-        <p className="text-sm text-muted">{done.text} went to a one-time address that only the recipient can find.</p>
-        <p className="break-all font-mono text-[11px] text-muted">{done.stealth}</p>
-        <a className="block text-sm text-accent underline" href={explorerTx(done.sig)} target="_blank" rel="noreferrer">
-          View on Solana Explorer
-        </a>
-        <button className="btn-ghost w-full" onClick={() => setDone(null)}>
+      <Receipt
+        title="Sent privately"
+        signature={done.sig}
+        lines={[
+          { label: 'Amount', value: done.text },
+          { label: 'Paid to', value: <span className="serial break-all">{shortAddr(done.stealth, 6)}</span> },
+        ]}
+      >
+        <button className="btn-primary flex-1" onClick={() => setDone(null)}>
           Send another
         </button>
-      </div>
+      </Receipt>
     )
   }
 
   return (
-    <div className="card space-y-4">
+    <section className="space-y-4">
       <div>
         <h2 className="font-semibold">Pay privately</h2>
-        <p className="mt-1 text-xs text-muted">
+        <p className="mt-1 text-[13px] text-muted">
           Paste someone's stealth address. Your payment goes to a fresh one-time address, so onlookers can't tell who
           received it. (You'll still be visible as the sender.)
         </p>
       </div>
       <div>
-        <label className="label">Recipient's stealth address</label>
+        <label className="label" htmlFor="stealth-to">
+          Their stealth address
+        </label>
         <textarea
-          className="input h-20 resize-none font-mono text-xs"
+          id="stealth-to"
+          className="input h-20 resize-none font-serial text-xs"
           placeholder="stealth:…"
           autoComplete="off"
           spellCheck={false}
           value={to}
           onChange={(e) => setTo(e.target.value)}
         />
-        {parsed.problem && <p className="mt-1.5 text-xs text-red-400">{parsed.problem}</p>}
-        {parsed.meta && <p className="mt-1.5 text-xs text-accent2">Valid stealth address ✓</p>}
+        {parsed.problem && <p className="mt-1.5 text-xs text-serial">{parsed.problem}</p>}
+        {parsed.meta && <p className="mt-1.5 text-xs text-ok">Valid stealth address ✓</p>}
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -192,16 +197,20 @@ function PayPrivately() {
         </div>
       </div>
       {asset && asset.id !== 'sol' && (
-        <p className="rounded-lg bg-white/5 p-3 text-xs text-muted">
+        <p className="rounded-[6px] bg-plate/6 p-3 text-xs text-muted">
           Token payments also open a token account for the one-time address and send about 0.003 SOL with it, so the
           recipient can move the tokens later without needing any SOL of their own.
         </p>
       )}
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && (
+        <p className="text-sm text-serial" role="alert">
+          {error}
+        </p>
+      )}
       <button className="btn-primary w-full" disabled={busy || !parsed.meta || !amountText || !asset} onClick={send}>
         {busy ? 'Sending…' : 'Send privately'}
       </button>
-    </div>
+    </section>
   )
 }
 
@@ -242,15 +251,15 @@ function Incoming({ keys }: { keys: StealthKeys }) {
   const spent = rows.length - withFunds.length
 
   return (
-    <div className="card space-y-3">
+    <section className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Private payments to you</h2>
-        <button className="text-xs text-accent" onClick={() => void qc.invalidateQueries({ queryKey: ['stealth'] })} disabled={feed.isFetching}>
+        <h2 className="font-semibold">Private payments to you</h2>
+        <button className="link text-xs" onClick={() => void qc.invalidateQueries({ queryKey: ['stealth'] })} disabled={feed.isFetching}>
           {feed.isFetching ? 'Scanning…' : 'Scan again'}
         </button>
       </div>
       {feed.error && (
-        <p className="text-sm text-red-400">Could not download the payment feed. Is the wallet server running? {friendlyError(feed.error)}</p>
+        <p className="text-sm text-serial">Could not download the payment feed. Is the wallet server running? {friendlyError(feed.error)}</p>
       )}
       {feed.data && (
         <p className="text-xs text-muted">
@@ -263,7 +272,7 @@ function Incoming({ keys }: { keys: StealthKeys }) {
         <div>
           <label className="label">Withdraw to</label>
           <input
-            className="input font-mono text-xs"
+            className="input font-serial text-xs"
             placeholder={address ?? ''}
             autoComplete="off"
             spellCheck={false}
@@ -277,20 +286,29 @@ function Incoming({ keys }: { keys: StealthKeys }) {
         </div>
       )}
 
-      <ul className="divide-y divide-line">
+      <ul className="divide-y divide-line border-y border-line empty:hidden">
         {withFunds.map((h) => (
           <PaymentRow key={h.payment.address} holdings={h} destination={dest} />
         ))}
       </ul>
-      {feed.data && rows.length === 0 && !feed.isLoading && <p className="text-sm text-muted">No private payments yet. Share your stealth address to receive one.</p>}
+      {feed.data && feed.data.payments.length === 0 && (
+        <p className="text-sm text-muted">No private payments yet. Share your stealth address to receive one.</p>
+      )}
+      {feed.data && feed.data.payments.length > 0 && holdings.isLoading && <p className="text-sm text-muted">Found {feed.data.payments.length} payment{feed.data.payments.length === 1 ? '' : 's'}. Checking what is waiting in them…</p>}
+      {holdings.error && !holdings.data && (
+        <p className="text-sm text-serial">
+          Could not read the balances of your one-time addresses. The network may be busy: <button className="link" onClick={() => void holdings.refetch()}>try again</button>.
+        </p>
+      )}
       {rows.length > 0 && withFunds.length === 0 && <p className="text-sm text-muted">Nothing waiting: everything sent to you has been withdrawn.</p>}
       {spent > 0 && withFunds.length > 0 && <p className="text-xs text-muted">{spent} earlier payment{spent === 1 ? '' : 's'} already withdrawn.</p>}
-    </div>
+    </section>
   )
 }
 
 function PaymentRow({ holdings, destination }: { holdings: Holdings; destination: string }) {
   const { address } = useWallet()
+  const toast = useToast()
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -302,7 +320,8 @@ function PaymentRow({ holdings, destination }: { holdings: Holdings; destination
     if (destination === payment.address) return setError('That is the payment address itself.')
     setBusy(true)
     try {
-      await sweepStealthAddress({ payment, destination })
+      const { signature: sig } = await sweepStealthAddress({ payment, destination })
+      toast.success(`Withdrawn to ${shortAddr(destination, 5)}.`, { label: 'View on Solana Explorer', href: explorerTx(sig) })
       void qc.invalidateQueries({ queryKey: ['stealth'] })
       void qc.invalidateQueries({ queryKey: ['assets', address] })
     } catch (e) {
@@ -321,17 +340,17 @@ function PaymentRow({ holdings, destination }: { holdings: Holdings; destination
     <li className="py-3">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-sm font-medium">{parts.join(' + ')}</div>
+          <div className="num text-sm font-semibold">{parts.join(' + ')}</div>
           <a className="text-xs text-muted underline decoration-dotted" href={explorerAddress(payment.address)} target="_blank" rel="noreferrer">
             one-time address {shortAddr(payment.address, 5)}
             {payment.blockTime ? ` · ${new Date(payment.blockTime * 1000).toLocaleString()}` : ''}
           </a>
         </div>
-        <button className="btn-primary !px-3 !py-1.5 text-xs" disabled={busy} onClick={withdraw}>
+        <button className="btn-primary px-3! py-1.5! min-h-9! text-xs" disabled={busy} onClick={withdraw}>
           {busy ? 'Withdrawing…' : 'Withdraw'}
         </button>
       </div>
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-xs text-serial">{error}</p>}
     </li>
   )
 }

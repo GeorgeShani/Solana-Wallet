@@ -45,20 +45,31 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     loadVault()
-      .then((v) => setStatus(v ? 'locked' : 'empty'))
-      .catch(() => setStatus('empty'))
+      .then((v) => setStatus((s) => (s === 'unlocked' ? s : v ? 'locked' : 'empty')))
+      .catch(() => setStatus((s) => (s === 'unlocked' ? s : 'empty')))
   }, [])
 
-  const open = useCallback(async (seed: string) => {
+  const open = useCallback(async (seed: string, opts?: { accountIndex?: number }) => {
     const svc = new WalletService(seed)
-    const count = readCount()
+    const index = opts?.accountIndex ?? 0
+    const count = Math.max(readCount(), index + 1)
     const addrs = await Promise.all(Array.from({ length: count }, (_, i) => svc.getAddress(i)))
     serviceRef.current = svc
     setService(svc)
     setAddresses(addrs)
-    setAccountIndex(0)
+    setAccountIndex(index)
     setStatus('unlocked')
   }, [])
+
+  // DEV ONLY (stripped from production builds): open a throwaway test wallet straight from
+  // `?e2eSeed=<recovery phrase>` so automated checks and screenshots don't need the password UI.
+  // It never touches the stored vault.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    const params = new URLSearchParams(location.search)
+    const seed = params.get('e2eSeed')
+    if (seed) void Promise.resolve().then(() => open(seed, { accountIndex: Number(params.get('e2eAccount') ?? 0) || 0 }))
+  }, [open])
 
   const lock = useCallback(() => {
     serviceRef.current?.dispose()

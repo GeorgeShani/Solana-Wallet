@@ -10,6 +10,10 @@ export interface Config {
   /** Origins allowed to call the API from a browser. */
   corsOrigins: string[]
   dbPath: string
+  /** Where uploaded NFT pictures are kept. */
+  nftDir: string
+  /** This server's address as seen from a browser: it goes into NFT metadata links. */
+  publicUrl: string
 }
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -33,5 +37,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     adminSeed,
     corsOrigins: (env.CORS_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173').split(',').map((s) => s.trim()),
     dbPath: env.DB_PATH ?? resolve(ROOT, 'server/data/wallet.db'),
+    nftDir: env.NFT_DIR ?? resolve(ROOT, 'server/data/nft'),
+    publicUrl: env.PUBLIC_URL ?? `http://localhost:${env.PORT ?? 3000}`,
   }
 }

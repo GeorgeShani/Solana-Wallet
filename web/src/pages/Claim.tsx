@@ -3,12 +3,15 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { getRelayFeePayer, relayTransaction } from '../api'
-import { CLUSTER, explorerTx } from '../config'
+import AuthShell from '../components/AuthShell'
+import { CLUSTER } from '../config'
 import { friendlyError } from '../lib/errors'
 import { formatUnits, shortAddr } from '../lib/format'
 import { buildClaimTransaction, fetchLink } from '../links/chain'
 import { parseLinkSecret } from '../links/secret'
 import { timeLeft, useTokenMeta } from '../links/useTokenMeta'
+import { Band } from '../ui/Guilloche'
+import Receipt from '../ui/Receipt'
 import { confirmSignature, validAddress } from '../wallet/rpc'
 import { useWallet } from '../wallet/WalletContext'
 
@@ -69,36 +72,29 @@ export default function Claim() {
   const expired = link ? timeLeft(link.expiry) === 'Expired' : false
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
-      <div className="mb-6 text-center">
-        <div className="mx-auto mb-3 h-12 w-12 rounded-2xl bg-gradient-to-br from-accent to-accent2" />
-        <h1 className="text-xl font-bold tracking-tight">Claim your funds</h1>
-        <p className="mt-1 text-xs text-muted">Solana {CLUSTER} · test tokens only</p>
-      </div>
-
-      <div className="card space-y-4">
+    <AuthShell title="Claim your funds" subtitle={`Solana ${CLUSTER} · test tokens only`} seed={secret?.claimKey ?? 'claim'}>
+      <div className="space-y-5">
         {secretQuery.isLoading || (secret && linkQuery.isLoading) ? (
-          <p className="text-sm text-muted">Checking the link…</p>
+          <p className="text-center text-sm text-muted">Checking the link…</p>
         ) : !secret ? (
-          <Problem title="This link isn't valid" text="It may have been cut off when it was copied. Ask the sender for the full link." />
+          <Problem title="This link isn’t valid" text="It may have been cut off when it was copied. Ask the sender for the full link." />
         ) : linkQuery.error ? (
-          <Problem title="Couldn't check the link" text="The network didn't answer. Refresh the page to try again." />
+          <Problem title="Couldn’t check the link" text="The network didn’t answer. Refresh the page to try again." />
         ) : claimed ? (
-          <div className="space-y-4 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent2/15 text-2xl text-accent2">✓</div>
-            <h2 className="text-lg font-semibold">Claimed</h2>
-            <p className="text-sm text-muted">
-              {claimed.amount ?? 'Your funds'} {claimed.amount ? 'was' : 'were'} sent to <span className="font-mono">{shortAddr(recipient.trim(), 6)}</span>.
-            </p>
-            <a className="block text-sm text-accent underline" href={explorerTx(claimed.sig)} target="_blank" rel="noreferrer">
-              View on Solana Explorer
-            </a>
+          <Receipt
+            title="Claimed"
+            signature={claimed.sig}
+            lines={[
+              { label: 'Amount', value: claimed.amount ?? 'Your funds' },
+              { label: 'Sent to', value: <span className="serial break-all">{shortAddr(recipient.trim(), 6)}</span> },
+            ]}
+          >
             {walletAddress && recipient.trim() === walletAddress && (
-              <Link to="/" className="btn-primary w-full">
+              <Link to="/" className="btn-primary flex-1">
                 Open my wallet
               </Link>
             )}
-          </div>
+          </Receipt>
         ) : !link ? (
           <Problem
             title="Nothing to claim here"
@@ -106,24 +102,28 @@ export default function Claim() {
           />
         ) : (
           <>
-            <div className="text-center">
-              <div className="text-xs uppercase tracking-wide text-muted">You received</div>
-              <div className="mt-1 text-3xl font-bold tracking-tight">{amount ?? '…'}</div>
-              <div className="mt-1 text-xs text-muted">
+            <div className="banknote rise px-5 pt-16 pb-5 text-center">
+              <Band seed={link.claimKey} className="absolute inset-x-0 top-0 h-14 w-full text-plate/50" draw />
+              <div className="numeral text-[40px] leading-none">{amount ?? '…'}</div>
+              <p className="mt-2 text-sm text-muted">is waiting for you</p>
+              <p className="serial mt-3 text-[10px]">
                 from {shortAddr(link.sender, 4)} · {timeLeft(link.expiry)}
-              </div>
+              </p>
             </div>
 
             {expired ? (
-              <p className="rounded-lg border border-amber-400/40 bg-amber-400/10 p-3 text-sm text-amber-200">
-                This link has expired, so it can't be claimed any more. Ask the sender to cancel it and send you a new one.
+              <p className="rounded-[6px] border border-caution/50 bg-caution/10 p-3 text-sm text-caution">
+                This link has expired, so it can’t be claimed any more. Ask the sender to cancel it and send you a new one.
               </p>
             ) : (
               <>
                 <div>
-                  <label className="label">Send it to this address</label>
+                  <label className="label" htmlFor="claim-to">
+                    Send it to this address
+                  </label>
                   <input
-                    className="input font-mono"
+                    id="claim-to"
+                    className="input font-serial text-[13px]"
                     placeholder="Your Solana address"
                     autoComplete="off"
                     spellCheck={false}
@@ -135,15 +135,20 @@ export default function Claim() {
                       ? 'Filled in from your wallet. You can use any address.'
                       : status === 'locked'
                         ? 'Your wallet is locked. Paste an address, or unlock it (then come back to this page).'
-                        : "Paste an address, or create a wallet first (then come back to this page). You don't need any SOL."}
+                        : 'Paste an address, or create a wallet first (then come back to this page). You don’t need any SOL.'}
                   </p>
                 </div>
-                {error && <p className="text-sm text-red-400">{error}</p>}
+                {error && (
+                  <p className="text-sm text-serial" role="alert">
+                    {error}
+                  </p>
+                )}
+                {busy && <div className="inking" role="status" aria-label="Claiming" />}
                 <button className="btn-primary w-full" disabled={busy || !recipient.trim()} onClick={claim}>
                   {busy ? 'Claiming…' : 'Claim'}
                 </button>
                 {!walletAddress && (
-                  <Link to="/" className="block text-center text-xs text-accent underline">
+                  <Link to="/" className="link block text-center text-xs">
                     {status === 'locked' ? 'Unlock my wallet' : 'Create a wallet'}
                   </Link>
                 )}
@@ -152,7 +157,7 @@ export default function Claim() {
           </>
         )}
       </div>
-    </div>
+    </AuthShell>
   )
 }
 

@@ -1,3 +1,4 @@
+import { Check, Copy } from 'lucide-react'
 import { useState } from 'react'
 
 export default function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) {
@@ -5,7 +6,7 @@ export default function CopyButton({ text, label = 'Copy' }: { text: string; lab
   return (
     <button
       type="button"
-      className="btn-ghost !px-3 !py-1.5 text-xs"
+      className="inline-flex min-h-8 items-center gap-1.5 rounded-[6px] border border-plate/40 px-2.5 text-xs font-semibold text-plate transition hover:border-plate hover:bg-plate/6"
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(text)
@@ -16,7 +17,8 @@ export default function CopyButton({ text, label = 'Copy' }: { text: string; lab
         }
       }}
     >
-      {done ? 'Copied ✓' : label}
+      {done ? <Check className="size-3.5 text-ok" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
+      <span aria-live="polite">{done ? 'Copied' : label}</span>
     </button>
   )
 }

@@ -1,12 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { WSOL_MINT, type SwapToken } from '@wallet/shared'
+import { ArrowDownUp } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { explorerTx } from '../config'
 import { friendlyError } from '../lib/errors'
 import { formatUnits, parseUnits } from '../lib/format'
 import { buildSwapInstructions } from '../swap/buildSwap'
 import { findRoute, quoteSwap, SWAP_TOKENS, usePools } from '../swap/pools'
+import { Medallion } from '../ui/Guilloche'
+import Receipt from '../ui/Receipt'
 import { confirmSignature } from '../wallet/rpc'
 import { useAssets } from '../wallet/useAssets'
 import { useWallet } from '../wallet/WalletContext'
@@ -128,32 +130,28 @@ export default function Swap() {
 
   if (done) {
     return (
-      <div className="card space-y-4 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent2/15 text-2xl text-accent2">✓</div>
-        <h2 className="text-lg font-semibold">Swap complete</h2>
-        <p className="text-sm text-muted">
-          {formatUnits(done.amountIn, done.tokenIn.decimals)} {done.tokenIn.symbol} for about{' '}
-          {formatUnits(done.expectedOut, done.tokenOut.decimals, 6)} {done.tokenOut.symbol}
-        </p>
-        <a className="block text-sm text-accent underline" href={explorerTx(done.sig)} target="_blank" rel="noreferrer">
-          View on Solana Explorer
-        </a>
-        <div className="flex gap-2">
-          <button
-            className="btn-ghost flex-1"
-            onClick={() => {
-              setDone(null)
-              setAmountText('')
-              setAcknowledged(false)
-            }}
-          >
-            Swap again
-          </button>
-          <Link to="/" className="btn-primary flex-1">
-            Done
-          </Link>
-        </div>
-      </div>
+      <Receipt
+        title="Swapped"
+        signature={done.sig}
+        lines={[
+          { label: 'You paid', value: `${formatUnits(done.amountIn, done.tokenIn.decimals)} ${done.tokenIn.symbol}` },
+          { label: 'You got about', value: `${formatUnits(done.expectedOut, done.tokenOut.decimals, 6)} ${done.tokenOut.symbol}` },
+        ]}
+      >
+        <button
+          className="btn-ghost flex-1"
+          onClick={() => {
+            setDone(null)
+            setAmountText('')
+            setAcknowledged(false)
+          }}
+        >
+          Swap again
+        </button>
+        <Link to="/" className="btn-primary flex-1">
+          Done
+        </Link>
+      </Receipt>
     )
   }
 
@@ -164,8 +162,8 @@ export default function Swap() {
   const highImpact = quote && quote.impactBps >= WARN_IMPACT_BPS
 
   return (
-    <div className="card space-y-3">
-      <h2 className="font-semibold">Swap</h2>
+    <div className="space-y-3">
+      <h1 className="text-xl font-semibold tracking-tight">Swap</h1>
 
       <TokenBox
         label="You pay"
@@ -174,7 +172,7 @@ export default function Swap() {
         balance={balanceOf(from)}
         input={
           <input
-            className="w-full bg-transparent text-2xl font-semibold outline-none placeholder:text-muted/50"
+            className="num w-full bg-transparent text-2xl font-semibold outline-none placeholder:text-muted/50"
             inputMode="decimal"
             placeholder="0.0"
             value={amountText}
@@ -192,9 +190,9 @@ export default function Swap() {
           type="button"
           aria-label="Flip tokens"
           onClick={flip}
-          className="z-10 -my-5 flex h-9 w-9 items-center justify-center rounded-xl border border-line bg-panel text-lg transition hover:bg-white/10"
+          className="z-10 -my-5 grid size-9 place-items-center rounded-full border border-plate/60 bg-note text-plate transition hover:bg-plate hover:text-note"
         >
-          ⇅
+          <ArrowDownUp className="size-4" aria-hidden />
         </button>
       </div>
 
@@ -204,18 +202,18 @@ export default function Swap() {
         onPick={pickTo}
         balance={balanceOf(to)}
         input={
-          <div className="text-2xl font-semibold">
+          <div className="num text-2xl font-semibold">
             {quote && to ? formatUnits(quote.amountOut, to.decimals, 6) : <span className="text-muted/50">0.0</span>}
           </div>
         }
       />
 
       {quote && from && to && (
-        <dl className="space-y-1.5 rounded-xl border border-line bg-ink p-3 text-xs">
+        <dl className="num space-y-1.5 rounded-[6px] border border-line bg-note p-3 text-xs">
           <Row k="Rate" v={rate ? `1 ${from.symbol} ≈ ${formatRate(rate)} ${to.symbol}` : '—'} />
           <Row
             k="Price impact"
-            v={<span className={highImpact ? 'font-semibold text-amber-300' : ''}>{bps(quote.impactBps)}</span>}
+            v={<span className={highImpact ? 'font-semibold text-caution' : ''}>{bps(quote.impactBps)}</span>}
           />
           <Row k="Pool fee" v={bps(route!.pool.feeBps)} />
           <Row k={`Minimum received (${bps(slippageBps)} slippage)`} v={`${formatUnits(quote.minOut, to.decimals, 6)} ${to.symbol}`} />
@@ -229,8 +227,8 @@ export default function Swap() {
             <button
               key={p}
               type="button"
-              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-                slippageBps === p && customSlippage === '' ? 'border-accent bg-accent/15' : 'border-line hover:bg-white/5'
+              className={`rounded-[6px] border px-3 py-1.5 text-xs font-semibold transition ${
+                slippageBps === p && customSlippage === '' ? 'border-plate bg-plate/10' : 'border-line hover:bg-plate/6'
               }`}
               onClick={() => {
                 setSlippageBps(p)
@@ -240,7 +238,7 @@ export default function Swap() {
               {bps(p)}
             </button>
           ))}
-          <div className="flex items-center gap-1 rounded-lg border border-line px-2 py-1 text-xs">
+          <div className="flex items-center gap-1 rounded-[6px] border border-line px-2 py-1.5 text-xs">
             <input
               aria-label="Custom slippage percent"
               className="w-12 bg-transparent text-right outline-none"
@@ -258,13 +256,17 @@ export default function Swap() {
       </div>
 
       {highImpact && quote && quote.impactBps < BLOCK_IMPACT_BPS && (
-        <label className="flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 p-3 text-xs text-amber-200">
+        <label className="flex items-start gap-2 rounded-[6px] border border-caution/50 bg-caution/10 p-3 text-xs text-caution">
           <input type="checkbox" className="mt-0.5" checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />
           This trade is large for the pool and moves the price by {bps(quote.impactBps)}, so you get a noticeably worse
           rate. I understand.
         </label>
       )}
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && (
+        <p className="text-sm text-serial" role="alert">
+          {error}
+        </p>
+      )}
 
       <button className="btn-primary w-full" disabled={busy || blocker !== ''} onClick={swap}>
         {busy ? 'Swapping…' : blocker || 'Swap'}
@@ -301,23 +303,24 @@ function TokenBox(props: {
 }) {
   const { label, token, onPick, balance, input, onMax } = props
   return (
-    <div className="rounded-xl border border-line bg-ink p-3">
+    <div className="rounded-[6px] border border-line bg-note p-3.5">
       <div className="mb-1 flex items-center justify-between text-xs text-muted">
         <span>{label}</span>
         <span>
           Balance: {token ? formatUnits(balance, token.decimals, 6) : '0'}
           {onMax && (
-            <button type="button" className="ml-2 text-accent" onClick={onMax}>
-              Max
+            <button type="button" className="link ml-2 text-xs" onClick={onMax}>
+              Use max
             </button>
           )}
         </span>
       </div>
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">{input}</div>
+        {token && <Medallion seed={token.mint} label={token.symbol} size={30} />}
         <select
           aria-label={`${label} token`}
-          className="rounded-lg border border-line bg-panel px-2 py-1.5 text-sm font-semibold"
+          className="rounded-[6px] border border-line bg-note px-2 py-1.5 text-sm font-semibold"
           value={token?.mint ?? ''}
           onChange={(e) => onPick(e.target.value)}
         >

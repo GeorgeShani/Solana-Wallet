@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { QRCodeSVG } from 'qrcode.react'
 import { useState } from 'react'
 import CopyButton from '../components/CopyButton'
+import { Band } from '../ui/Guilloche'
 import { explorerTx, SYSTEM_ACCOUNT_SIZE } from '../config'
 import { friendlyError } from '../lib/errors'
 import { formatUnits, parseUnits, shortAddr } from '../lib/format'
@@ -98,25 +99,26 @@ export default function Links() {
   if (created) {
     return (
       <div className="space-y-4">
-        <div className="card space-y-4 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent2/15 text-2xl text-accent2">✓</div>
-          <h2 className="text-lg font-semibold">
-            Link ready: {formatUnits(created.amount, created.decimals)} {created.symbol}
+        <div className="banknote rise space-y-4 px-5 pt-20 pb-6 text-center">
+          <Band seed={created.url.slice(-12)} className="absolute inset-x-0 top-0 h-16 w-full text-plate/50" draw />
+          <h2 className="numeral text-[30px] leading-tight">
+            {formatUnits(created.amount, created.decimals)} {created.symbol}
           </h2>
-          <div className="mx-auto w-fit rounded-2xl bg-white p-3">
-            <QRCodeSVG value={created.url} size={160} />
+          <p className="-mt-2 text-sm text-muted">Your link is ready to hand over.</p>
+          <div className="mx-auto w-fit rounded-[4px] bg-white p-3 ring-1 ring-plate/60">
+            <QRCodeSVG value={created.url} size={160} fgColor="#052a2d" />
           </div>
           <div className="flex items-center gap-2">
-            <input readOnly aria-label="Claim link" className="input font-mono text-xs" value={created.url} onFocus={(e) => e.target.select()} />
+            <input readOnly aria-label="Claim link" className="input font-serial text-xs" value={created.url} onFocus={(e) => e.target.select()} />
             <CopyButton text={created.url} label="Copy link" />
           </div>
-          <p className="rounded-lg border border-amber-400/40 bg-amber-400/10 p-3 text-left text-xs text-amber-200">
+          <p className="rounded-[6px] border border-caution/50 bg-caution/10 p-3 text-left text-xs text-caution">
             <b>Anyone with this link can claim the funds, so share it only with the person you mean it for.</b> It is
             shown once and is not stored anywhere, so copy it now. If it goes unclaimed you can cancel it below and get
             everything back.
           </p>
           <p className="text-xs text-muted">Expires {new Date(created.expiry * 1000).toLocaleString()}</p>
-          <a className="block text-sm text-accent underline" href={explorerTx(created.sig)} target="_blank" rel="noreferrer">
+          <a className="link block text-sm" href={explorerTx(created.sig)} target="_blank" rel="noreferrer">
             View on Solana Explorer
           </a>
           <button className="btn-ghost w-full" onClick={() => setCreated(null)}>
@@ -130,17 +132,15 @@ export default function Links() {
 
   return (
     <div className="space-y-4">
-      <div className="card space-y-4">
+      <div className="space-y-5">
+        <p className="text-sm text-muted">
+          Put money behind a link. Whoever opens it can claim it to any address, so you don’t need to know theirs, and they don’t need any SOL. The link is the only thing you share.
+        </p>
         <div>
-          <h2 className="font-semibold">Send by link</h2>
-          <p className="mt-1 text-xs text-muted">
-            Lock funds behind a link. Whoever opens it can claim them to any address, so you don't need to know the
-            recipient's address, and they don't need any SOL. The link (not your address) is the only thing you share.
-          </p>
-        </div>
-        <div>
-          <label className="label">Asset</label>
-          <select className="input" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
+          <label className="label" htmlFor="asset">
+            What to send
+          </label>
+          <select id="asset" className="input" value={assetId} onChange={(e) => setAssetId(e.target.value)}>
             {assets?.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.symbol}: {formatUnits(a.balance, a.decimals, 6)}
@@ -150,12 +150,14 @@ export default function Links() {
         </div>
         <div>
           <div className="flex items-end justify-between">
-            <label className="label">Amount</label>
-            <button type="button" className="mb-1.5 text-xs text-accent" onClick={setMax}>
-              Max
+            <label className="label" htmlFor="amount">
+              Amount
+            </label>
+            <button type="button" className="link mb-1.5 text-xs" onClick={setMax}>
+              Use max
             </button>
           </div>
-          <input className="input" inputMode="decimal" placeholder="0.0" value={amountText} onChange={(e) => setAmountText(e.target.value)} />
+          <input id="amount" className="input num" inputMode="decimal" placeholder="0.0" value={amountText} onChange={(e) => setAmountText(e.target.value)} />
         </div>
         <div>
           <label className="label">Link expires after</label>
@@ -164,8 +166,8 @@ export default function Links() {
               <button
                 key={c.seconds}
                 type="button"
-                className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-                  expiryChoice === c.seconds ? 'border-accent bg-accent/15' : 'border-line hover:bg-white/5'
+                className={`rounded-[6px] border px-3 py-1.5 text-xs font-semibold transition ${
+                  expiryChoice === c.seconds ? 'border-plate bg-plate/10' : 'border-line hover:bg-plate/6'
                 }`}
                 onClick={() => setExpiryChoice(c.seconds)}
               >
@@ -175,10 +177,14 @@ export default function Links() {
           </div>
           <p className="mt-1.5 text-xs text-muted">After this it can't be claimed, but you can always cancel it and get your funds back.</p>
         </div>
-        <p className="rounded-lg bg-white/5 p-3 text-xs text-muted">
+        <p className="rounded-[6px] bg-plate/6 p-3 text-xs text-muted">
           A small deposit (about 0.003 SOL) is held while the link is open and returned when it is claimed or cancelled.
         </p>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && (
+          <p className="text-sm text-serial" role="alert">
+            {error}
+          </p>
+        )}
         <button className="btn-primary w-full" disabled={busy || !amountText || !asset} onClick={create}>
           {busy ? 'Creating link…' : 'Create link'}
         </button>
@@ -190,16 +196,16 @@ export default function Links() {
 
 function MyLinks({ links, loading }: { links?: LinkInfo[]; loading: boolean }) {
   return (
-    <div className="card">
-      <h2 className="mb-3 text-sm font-semibold">Your open links</h2>
+    <section>
+      <h2 className="mb-1 text-[15px] font-semibold">Your open links</h2>
       {loading && <p className="text-sm text-muted">Loading…</p>}
       {links?.length === 0 && (
         <p className="text-sm text-muted">No open links. Claimed and cancelled links disappear from this list.</p>
       )}
-      <ul className="divide-y divide-line">
+      <ul className="divide-y divide-line border-y border-line">
         {links?.map((l) => <LinkRow key={l.claim} link={l} />)}
       </ul>
-    </div>
+    </section>
   )
 }
 
@@ -222,6 +228,7 @@ function LinkRow({ link }: { link: LinkInfo }) {
       await confirmSignature(hash)
       void qc.invalidateQueries({ queryKey: ['links', address] })
       void qc.invalidateQueries({ queryKey: ['assets', address] })
+      setTimeout(() => void qc.invalidateQueries({ queryKey: ['links', address] }), 3_000)
     } catch (e) {
       setError(friendlyError(e))
       setBusy(false)
@@ -232,21 +239,21 @@ function LinkRow({ link }: { link: LinkInfo }) {
     <li className="py-3">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <div className="text-sm font-medium">{meta ? `${formatUnits(link.amount, meta.decimals, 6)} ${meta.symbol}` : '…'}</div>
-          <div className={`text-xs ${expired ? 'text-amber-300' : 'text-muted'}`}>
+          <div className="num text-sm font-semibold">{meta ? `${formatUnits(link.amount, meta.decimals, 6)} ${meta.symbol}` : '…'}</div>
+          <div className={`text-xs ${expired ? 'text-caution' : 'text-muted'}`}>
             {status} · {shortAddr(link.claimKey, 4)}
           </div>
         </div>
         {!confirming ? (
-          <button className="btn-ghost !px-3 !py-1.5 text-xs" onClick={() => setConfirming(true)}>
+          <button className="btn-ghost px-3! py-1.5! min-h-9! text-xs" onClick={() => setConfirming(true)}>
             Cancel link
           </button>
         ) : (
           <div className="flex gap-2">
-            <button className="btn-ghost !px-3 !py-1.5 text-xs" disabled={busy} onClick={() => setConfirming(false)}>
+            <button className="btn-ghost px-3! py-1.5! min-h-9! text-xs" disabled={busy} onClick={() => setConfirming(false)}>
               Keep
             </button>
-            <button className="btn-danger !px-3 !py-1.5 text-xs" disabled={busy} onClick={cancel}>
+            <button className="btn-danger px-3! py-1.5! min-h-9! text-xs" disabled={busy} onClick={cancel}>
               {busy ? 'Cancelling…' : 'Yes, cancel'}
             </button>
           </div>
@@ -255,7 +262,7 @@ function LinkRow({ link }: { link: LinkInfo }) {
       {confirming && !busy && (
         <p className="mt-2 text-xs text-muted">The link stops working and the funds return to your wallet.</p>
       )}
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-xs text-serial">{error}</p>}
     </li>
   )
 }

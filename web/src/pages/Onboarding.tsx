@@ -1,5 +1,7 @@
 import * as bip39 from 'bip39'
+import { ShieldCheck } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import AuthShell from '../components/AuthShell'
 import { useWallet } from '../wallet/WalletContext'
 
 type Step = 'choose' | 'show' | 'confirm' | 'import' | 'password'
@@ -8,6 +10,14 @@ const pickPositions = (n: number, total: number) => {
   const set = new Set<number>()
   while (set.size < n) set.add(crypto.getRandomValues(new Uint32Array(1))[0] % total)
   return [...set].sort((a, b) => a - b)
+}
+
+const TITLES: Record<Step, { title: string; subtitle?: string }> = {
+  choose: { title: 'Solana Wallet', subtitle: 'Your own money, held only by you. Practice on Solana’s test network, risk-free.' },
+  show: { title: 'Your recovery phrase', subtitle: 'Step 1 of 3' },
+  confirm: { title: 'Check your backup', subtitle: 'Step 2 of 3' },
+  import: { title: 'Bring your wallet', subtitle: 'Use the recovery phrase you saved.' },
+  password: { title: 'Set a password', subtitle: 'Last step' },
 }
 
 export default function Onboarding() {
@@ -42,7 +52,7 @@ export default function Onboarding() {
 
   const checkImport = () => {
     const normalized = importText.trim().toLowerCase().split(/\s+/).join(' ')
-    if (!bip39.validateMnemonic(normalized)) return setError('Invalid recovery phrase. Check the words and their order.')
+    if (!bip39.validateMnemonic(normalized)) return setError('That recovery phrase is not valid. Check the words and their order.')
     setSeed(normalized)
     setError('')
     setStep('password')
@@ -50,27 +60,28 @@ export default function Onboarding() {
 
   const finish = async () => {
     if (pw.length < 8) return setError('Use at least 8 characters.')
-    if (pw !== pw2) return setError('Passwords do not match.')
+    if (pw !== pw2) return setError('The two passwords are different.')
     setBusy(true)
     setError('')
     try {
       await createWallet(seed, pw)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not create wallet')
+      setError(e instanceof Error ? e.message : 'Could not create the wallet')
       setBusy(false)
     }
   }
 
-  return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
-      <div className="mb-8 text-center">
-        <div className="mx-auto mb-4 h-14 w-14 rounded-2xl bg-gradient-to-br from-accent to-accent2" />
-        <h1 className="text-2xl font-bold tracking-tight">Solana Wallet</h1>
-        <p className="mt-1 text-sm text-muted">A self-custodial wallet on Solana devnet</p>
-      </div>
+  const { title, subtitle } = TITLES[step]
+  const err = error && (
+    <p className="text-sm text-serial" role="alert">
+      {error}
+    </p>
+  )
 
+  return (
+    <AuthShell title={title} subtitle={subtitle} seed={`solana wallet ${step}`}>
       {step === 'choose' && (
-        <div className="card space-y-3">
+        <div className="space-y-3">
           <button className="btn-primary w-full" onClick={startCreate}>
             Create a new wallet
           </button>
@@ -83,30 +94,28 @@ export default function Onboarding() {
           >
             I already have a recovery phrase
           </button>
-          <p className="pt-2 text-xs text-muted">
-            Your keys are generated and encrypted in this browser. Nobody else, including us, can recover them for you.
+          <p className="flex items-start gap-2 pt-3 text-[13px] text-muted">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-plate" aria-hidden />
+            Your keys are made and locked inside this browser. Nobody else, including us, can recover them for you.
           </p>
         </div>
       )}
 
       {step === 'show' && (
-        <div className="card space-y-4">
-          <h2 className="font-semibold">Your recovery phrase</h2>
+        <div className="space-y-4">
           <p className="text-sm text-muted">
-            These 12 words <b className="text-white">are</b> your wallet. Write them down and keep them offline. Anyone with
-            them can take your funds, and if you lose them, nobody can restore access.
+            These 12 words <b className="text-ink">are</b> your wallet. Write them down and keep them offline. Anyone who has them can take your money, and if you lose them, nobody can bring it back.
           </p>
           <ol className="grid grid-cols-3 gap-2">
             {words.map((w, i) => (
-              <li key={i} className="rounded-lg border border-line bg-ink px-2 py-1.5 text-sm">
-                <span className="mr-1.5 text-xs text-muted">{i + 1}</span>
+              <li key={i} className="flex items-baseline gap-1.5 rounded-[4px] border border-line bg-note px-2 py-2 text-sm">
+                <span className="serial w-4 shrink-0 text-right text-[10px]">{i + 1}</span>
                 {w}
               </li>
             ))}
           </ol>
-          <label className="flex items-start gap-2 text-sm">
-            <input type="checkbox" className="mt-1" checked={saved} onChange={(e) => setSaved(e.target.checked)} />
-            I have written it down somewhere safe.
+          <label className="flex items-start gap-2.5 text-sm">
+            <input type="checkbox" className="mt-0.5" checked={saved} onChange={(e) => setSaved(e.target.checked)} />I have written them down somewhere safe.
           </label>
           <button className="btn-primary w-full" disabled={!saved} onClick={() => setStep('confirm')}>
             Continue
@@ -115,13 +124,15 @@ export default function Onboarding() {
       )}
 
       {step === 'confirm' && (
-        <div className="card space-y-4">
-          <h2 className="font-semibold">Confirm your backup</h2>
-          <p className="text-sm text-muted">Enter the requested words from your recovery phrase.</p>
+        <div className="space-y-4">
+          <p className="text-sm text-muted">Type these words from your recovery phrase, so we know the backup works.</p>
           {positions.map((p) => (
             <div key={p}>
-              <label className="label">Word #{p + 1}</label>
+              <label className="label" htmlFor={`w${p}`}>
+                Word number {p + 1}
+              </label>
               <input
+                id={`w${p}`}
                 className="input"
                 autoComplete="off"
                 autoCapitalize="none"
@@ -131,7 +142,7 @@ export default function Onboarding() {
               />
             </div>
           ))}
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {err}
           <div className="flex gap-2">
             <button className="btn-ghost flex-1" onClick={() => setStep('show')}>
               Back
@@ -144,11 +155,13 @@ export default function Onboarding() {
       )}
 
       {step === 'import' && (
-        <div className="card space-y-4">
-          <h2 className="font-semibold">Import a wallet</h2>
+        <div className="space-y-4">
           <div>
-            <label className="label">Recovery phrase (12 or 24 words)</label>
+            <label className="label" htmlFor="phrase">
+              Recovery phrase (12 or 24 words)
+            </label>
             <textarea
+              id="phrase"
               className="input h-28 resize-none"
               autoComplete="off"
               autoCapitalize="none"
@@ -157,7 +170,7 @@ export default function Onboarding() {
               onChange={(e) => setImportText(e.target.value)}
             />
           </div>
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {err}
           <div className="flex gap-2">
             <button className="btn-ghost flex-1" onClick={() => setStep('choose')}>
               Back
@@ -170,25 +183,26 @@ export default function Onboarding() {
       )}
 
       {step === 'password' && (
-        <div className="card space-y-4">
-          <h2 className="font-semibold">Set a password</h2>
-          <p className="text-sm text-muted">
-            It encrypts your recovery phrase on this device and unlocks the wallet. It cannot recover a lost phrase.
-          </p>
+        <div className="space-y-4">
+          <p className="text-sm text-muted">It locks your recovery phrase on this device and opens the wallet. It cannot recover a lost phrase.</p>
           <div>
-            <label className="label">Password</label>
-            <input className="input" type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} />
+            <label className="label" htmlFor="pw1">
+              Password
+            </label>
+            <input id="pw1" className="input" type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} />
           </div>
           <div>
-            <label className="label">Confirm password</label>
-            <input className="input" type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
+            <label className="label" htmlFor="pw2">
+              Type it again
+            </label>
+            <input id="pw2" className="input" type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
           </div>
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {err}
           <button className="btn-primary w-full" disabled={busy} onClick={finish}>
-            {busy ? 'Encrypting…' : 'Create wallet'}
+            {busy ? 'Locking it up…' : 'Create wallet'}
           </button>
         </div>
       )}
-    </div>
+    </AuthShell>
   )
 }

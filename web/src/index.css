@@ -1,49 +1,537 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/bodoni-moda';
+@import '@fontsource-variable/martian-mono';
 
+/*
+ * THE ENGRAVED NOTE
+ * Cool bank-note paper, one teal line ink, one red serial ink, and colour-shift foil that only
+ * appears when something is verified. Every rule is a one-pixel hairline. Nothing else is allowed
+ * in: no extra hues, no shadows that glow, no rounded-pill chrome.
+ */
 @theme {
-  --color-ink: #0b0d12;
-  --color-panel: #141821;
-  --color-line: #232a37;
-  --color-muted: #8a94a7;
-  --color-accent: #9945ff;
-  --color-accent2: #14f195;
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --color-paper: #e4efec; /* the ground: cool bank-note stock */
+  --color-note: #f4faf8; /* a fresh sheet laid on the ground */
+  --color-vellum: #d2e3df; /* sunken areas and washes */
+  --color-ink: #0a3235; /* body text: intaglio black-teal */
+  --color-plate: #0b4d50; /* the line ink: primary actions, active marks */
+  --color-plate-deep: #052a2d; /* the printing plate behind the note */
+  --color-muted: #48696b; /* secondary text */
+  --color-line: #a9c4c0; /* hairlines */
+  --color-serial: #bf2a21; /* serial-number red: ids, alerts, "look here" */
+  --color-ok: #0b6b47; /* confirmed */
+  --color-caution: #8a5200; /* warnings */
+  --color-foil-a: #2bb5a8;
+  --color-foil-b: #7a5cff;
+  --color-foil-c: #e0b04a;
+
+  /* older class names still used across pages */
+  --color-accent: var(--color-plate);
+  --color-accent2: var(--color-ok);
+  --color-panel: var(--color-note);
+
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-numeral: 'Bodoni Moda Variable', 'Bodoni 72', Georgia, serif;
+  --font-serial: 'Martian Mono Variable', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  --radius-note: 6px;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  --foil: linear-gradient(105deg, var(--color-foil-a), var(--color-foil-b) 45%, var(--color-foil-c));
+  color-scheme: light;
 }
 
 html,
 body,
 #root {
   min-height: 100%;
+  height: 100%;
 }
 
 body {
   margin: 0;
-  background: var(--color-ink);
-  color: #e8ecf3;
+  background: var(--color-plate-deep);
+  color: var(--color-ink);
   font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  caret-color: var(--color-plate);
+  scrollbar-color: var(--color-line) transparent;
 }
 
+::selection {
+  background: var(--color-plate);
+  color: var(--color-note);
+}
+
+* {
+  scrollbar-width: thin;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+/* keyboard focus: a crisp line, in the same ink as the rest */
+:focus-visible {
+  outline: 2px solid var(--color-plate);
+  outline-offset: 2px;
+}
+
+input,
+textarea,
+select {
+  color: var(--color-ink);
+}
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--color-muted) 80%, transparent);
+}
+input[type='checkbox'] {
+  accent-color: var(--color-plate);
+  width: 1rem;
+  height: 1rem;
+}
+
+.num {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* ----------------------------------------------------------------- the stage and the frame */
+
+.stage {
+  position: relative;
+  min-height: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* clip, not hidden: a hidden box can still be scrolled by focus, which slid the frame sideways */
+  overflow: clip;
+  background:
+    radial-gradient(1200px 700px at 50% 30%, #0a4a4e 0%, transparent 70%),
+    var(--color-plate-deep);
+}
+
+.stage-wallpaper {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: max(140vmin, 900px);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  fill: none;
+  stroke: #46c6bd;
+  stroke-width: 0.4;
+  opacity: 0.24;
+  pointer-events: none;
+}
+
+.stage-microtext {
+  position: absolute;
+  inset: auto 0 14px 0;
+  text-align: center;
+  font: 500 9px/1 var(--font-serial);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #6fb9b3;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.frame {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: var(--color-paper);
+  overflow: clip;
+}
+
+@media (min-width: 560px) {
+  .stage {
+    padding: 20px;
+  }
+  .frame {
+    width: 420px;
+    /* leave a strip under the frame for the printed microtext */
+    height: min(880px, calc(100% - 28px));
+    margin-bottom: 28px;
+    border-radius: 14px;
+    /* the frame is a note lying on the plate: a hairline, then a double rule inside it */
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.14),
+      0 24px 60px -10px rgb(0 0 0 / 0.55),
+      0 4px 14px rgb(0 0 0 / 0.3);
+  }
+}
+
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-line);
+  background: var(--color-note);
+}
+
+.page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: clip;
+  padding: 20px 16px 28px;
+  scroll-padding-bottom: 24px;
+}
+
+.tabbar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-note);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 9px 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-muted);
+  transition: color 0.15s;
+}
+.tab:hover {
+  color: var(--color-plate);
+}
+.tab[aria-current='page'] {
+  color: var(--color-plate);
+  font-weight: 650;
+}
+/* the active tab carries the foil thread, like the security strip in a note */
+.tab[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  inset: -1px 22% auto 22%;
+  height: 3px;
+  background: var(--foil);
+  border-radius: 0 0 2px 2px;
+}
+
+/* ----------------------------------------------------------------- surfaces */
+
+/* a panel: a sheet laid on the page, edged by a single hairline */
+.card {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-note);
+  background: var(--color-note);
+  padding: 16px;
+}
+
+.rule {
+  height: 1px;
+  background: var(--color-line);
+  border: 0;
+  /* no margin here: spacing comes from the parent's gap utilities, which an unlayered rule would override */
+}
+
+/* the banknote: hairline frame, a second rule inset from it, a guilloche band, foil thread */
+.banknote {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-note);
+  background: var(--color-note);
+  box-shadow:
+    0 0 0 1px var(--color-plate),
+    0 10px 24px -14px rgb(5 42 45 / 0.6);
+}
+.banknote::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid color-mix(in srgb, var(--color-plate) 45%, transparent);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.serial {
+  font-family: var(--font-serial);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--color-serial);
+  font-variant-numeric: tabular-nums;
+}
+
+.microtext {
+  font: 500 7px/1 var(--font-serial);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-plate) 70%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.numeral {
+  font-family: var(--font-numeral);
+  font-variation-settings: 'opsz' 96;
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--color-plate);
+}
+
+.guilloche {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.5;
+  vector-effect: non-scaling-stroke;
+}
+
+/* ----------------------------------------------------------------- controls */
+
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-[6px] px-4 py-2.5 text-sm font-semibold tracking-[0.005em] no-underline transition duration-150 select-none active:translate-y-px disabled:cursor-not-allowed disabled:opacity-45 disabled:active:translate-y-0;
 }
 
 @layer components {
-  .card {
-    @apply rounded-2xl border border-line bg-panel p-5;
-  }
   .input {
-    @apply w-full rounded-xl border border-line bg-ink px-3 py-2.5 text-sm outline-none transition focus:border-accent;
+    @apply min-h-11 w-full rounded-[6px] border border-line bg-note px-3 py-2.5 text-[15px] transition;
+  }
+  .input:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--color-plate) 55%, var(--color-line));
+  }
+  .input:focus {
+    @apply border-plate outline-none;
+    box-shadow: 0 0 0 1px var(--color-plate);
   }
   .label {
-    @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted;
+    @apply mb-1.5 block text-[13px] font-medium text-muted;
   }
   .btn-primary {
-    @apply btn bg-accent text-white hover:brightness-110;
+    @apply btn bg-plate text-note hover:bg-plate-deep;
+    /* engraved: a fine rule inside the edge */
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.16),
+      inset 0 0 0 3px var(--color-plate),
+      inset 0 0 0 4px rgb(255 255 255 / 0.2);
+  }
+  .btn-primary:hover:not(:disabled) {
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.2),
+      inset 0 0 0 3px var(--color-plate-deep),
+      inset 0 0 0 4px rgb(255 255 255 / 0.28);
   }
   .btn-ghost {
-    @apply btn border border-line bg-transparent text-white hover:bg-white/5;
+    @apply btn border border-plate/45 bg-transparent text-plate hover:border-plate hover:bg-plate/6;
   }
   .btn-danger {
-    @apply btn border border-red-500/40 text-red-300 hover:bg-red-500/10;
+    @apply btn border border-serial/55 bg-transparent text-serial hover:border-serial hover:bg-serial/6;
+  }
+}
+
+/* a round seal for the main actions (Send, Receive, Swap ...) */
+.stamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-plate);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.stamp-disc {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--color-plate);
+  color: var(--color-note);
+  /* two fine rings, as if struck from a die */
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.2),
+    inset 0 0 0 4px var(--color-plate),
+    inset 0 0 0 5px rgb(255 255 255 / 0.28),
+    0 0 0 1px var(--color-plate),
+    0 0 0 4px var(--color-paper),
+    0 0 0 5px color-mix(in srgb, var(--color-plate) 40%, transparent);
+  transition: transform 0.18s var(--ease-out-expo);
+}
+.stamp:hover .stamp-disc {
+  transform: translateY(-2px);
+}
+.stamp:active .stamp-disc {
+  transform: translateY(0) scale(0.97);
+}
+.stamp:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* small underlined text actions */
+.link {
+  color: var(--color-plate);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 550;
+  cursor: pointer;
+}
+.link:hover {
+  color: var(--color-plate-deep);
+  text-decoration-thickness: 2px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-muted);
+  background: var(--color-note);
+}
+
+/* ----------------------------------------------------------------- printing (the one authored motion) */
+
+/* a rosette draws itself, line by line, when it first appears */
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.draw path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 1.6s var(--ease-out-expo) forwards;
+}
+.draw path:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.draw path:nth-child(3) {
+  animation-delay: 0.24s;
+}
+.draw path:nth-child(4) {
+  animation-delay: 0.36s;
+}
+
+/* a receipt line is struck onto the sheet from the top down */
+@keyframes strike {
+  from {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.strike {
+  animation: strike 0.5s var(--ease-out-expo) both;
+  animation-delay: calc(var(--i, 0) * 140ms);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise {
+  animation: rise 0.45s var(--ease-out-expo) both;
+}
+
+/* an ink line that sweeps while something is happening on the network */
+@keyframes sweep {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.inking {
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-line) 0 35%, var(--color-plate) 50%, var(--color-line) 65% 100%) 0 0 / 200% 100%;
+  animation: sweep 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draw path {
+    animation: none;
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+  }
+  .strike,
+  .rise {
+    animation: none;
+  }
+  .inking {
+    animation: none;
+  }
+  .stamp-disc {
+    transition: none;
+  }
+}
+
+/* a receipt is torn from a roll: perforated along the bottom */
+.receipt-edge {
+  box-shadow: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - 7px) no-repeat,
+    conic-gradient(from -45deg at bottom, #000 90deg, #0000 0) bottom / 14px 7px repeat-x;
+  mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - 7px) no-repeat,
+    conic-gradient(from -45deg at bottom, #000 90deg, #0000 0) bottom / 14px 7px repeat-x;
+  border: 1px solid var(--color-plate);
+  border-bottom: 0;
+}
+.receipt-edge::after {
+  inset: 5px 5px 12px 5px;
+}
+
+.draw-check {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 0.7s 0.5s var(--ease-out-expo) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .draw-check {
+    animation: none;
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
   }
 }

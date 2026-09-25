@@ -8,6 +8,7 @@ import { addressBytes } from './token'
 export * from './encoding'
 export * from './token'
 export * from './timelocks'
+export * from './mplCore'
 export { describeProgramError, findAssociatedTokenAddress, instructionDiscriminator, PROGRAM_ADDRESS } from './core'
 
 // ------------------------------------------------------------------ addresses

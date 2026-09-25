@@ -21,15 +21,15 @@ export default function Settings() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="card space-y-3">
+    <div className="space-y-7">
+      <section className="space-y-3">
         <h2 className="font-semibold">Recovery phrase</h2>
         {seed ? (
           <>
             <ol className="grid grid-cols-3 gap-2">
               {seed.split(' ').map((w, i) => (
-                <li key={i} className="rounded-lg border border-line bg-ink px-2 py-1.5 text-sm">
-                  <span className="mr-1.5 text-xs text-muted">{i + 1}</span>
+                <li key={i} className="flex items-baseline gap-1.5 rounded-[4px] border border-line bg-note px-2 py-1.5 text-sm">
+                  <span className="serial w-4 shrink-0 text-right text-[10px]">{i + 1}</span>
                   {w}
                 </li>
               ))}
@@ -40,32 +40,36 @@ export default function Settings() {
           </>
         ) : (
           <>
-            <p className="text-sm text-muted">Enter your password to view your phrase. Make sure nobody is watching.</p>
+            <p className="text-sm text-muted">These 12 words are your wallet. Enter your password to view them, and make sure nobody is watching.</p>
             <input
               className="input"
               type="password"
               placeholder="Password"
+              aria-label="Password"
               autoComplete="current-password"
               value={pw}
               onChange={(e) => setPw(e.target.value)}
             />
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-serial">{error}</p>}
             <button className="btn-ghost w-full" disabled={!pw} onClick={reveal}>
-              Reveal
+              Show recovery phrase
             </button>
           </>
         )}
-      </div>
+      </section>
 
-      <div className="card space-y-2 text-sm">
+      <hr className="rule" />
+
+      <section className="space-y-1.5 text-sm">
         <h2 className="font-semibold">Network</h2>
-        <p className="text-muted">
-          Solana devnet · <span className="font-mono text-xs">{RPC_URL}</span>
-        </p>
-      </div>
+        <p className="text-muted">Solana devnet, the practice network. Its money has no real value.</p>
+        <p className="serial break-all text-[10px] text-muted!">{RPC_URL}</p>
+      </section>
 
-      <div className="card space-y-3">
-        <h2 className="font-semibold text-red-300">Danger zone</h2>
+      <hr className="rule" />
+
+      <section className="space-y-3">
+        <h2 className="font-semibold text-serial">Remove wallet</h2>
         {!confirmReset ? (
           <button className="btn-danger w-full" onClick={() => setConfirmReset(true)}>
             Remove wallet from this device
@@ -73,7 +77,7 @@ export default function Settings() {
         ) : (
           <>
             <p className="text-sm text-muted">
-              This deletes the encrypted wallet from this browser. You can only restore it with your recovery phrase.
+              This deletes the encrypted wallet from this browser. Without your recovery phrase, you cannot get it back.
             </p>
             <div className="flex gap-2">
               <button className="btn-ghost flex-1" onClick={() => setConfirmReset(false)}>
@@ -85,7 +89,7 @@ export default function Settings() {
             </div>
           </>
         )}
-      </div>
+      </section>
     </div>
   )
 }
