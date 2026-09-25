@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { LOGO_LAYERS, LOGO_SEED } from './brand'
 import { band, rosette, seededRandom } from './guillocheMath'
 
 const ADDR_A = '141GfzLBSYp2qBEtqdBfJ9P3FGK99twsu6NLaE8y5z2i'
@@ -68,5 +69,15 @@ describe('band', () => {
       expect(Math.min(...n)).toBeGreaterThanOrEqual(0)
       expect(Math.max(...n)).toBeLessThanOrEqual(300)
     }
+  })
+})
+
+describe('the logo', () => {
+  test('is one fixed rosette that never changes (the icons and share image are generated from it)', () => {
+    const g = rosette(LOGO_SEED, { layers: LOGO_LAYERS, detail: 90 })
+    expect(g.paths).toHaveLength(3)
+    expect(g.paths[0].startsWith('M87.3 195.2L100.2 192.9L110.8 183.1')).toBe(true)
+    expect(g.paths[1].startsWith('M67.7 179.7L69.2 179.9')).toBe(true)
+    expect(g.paths[2].startsWith('M153.5 46L155.2 47.8')).toBe(true)
   })
 })

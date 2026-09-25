@@ -1,5 +1,6 @@
 import { ChevronRight, EyeOff, Link2, Settings, Timer } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { LogoLockup } from '../ui/Logo'
 
 const ITEMS = [
   {
@@ -48,6 +49,10 @@ export default function More() {
           </li>
         ))}
       </ul>
+      <div className="flex flex-col items-center gap-2 pt-8 text-center">
+        <LogoLockup />
+        <p className="max-w-[30ch] text-xs text-muted">A self-custodial wallet on Solana devnet. Its money is free and has no real value.</p>
+      </div>
     </div>
   )
 }

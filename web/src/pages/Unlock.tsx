@@ -23,7 +23,7 @@ export default function Unlock() {
   }
 
   return (
-    <AuthShell title="Welcome back" subtitle="Enter your password to open your wallet." seed="welcome back">
+    <AuthShell title="Welcome back" subtitle="Enter your password to open your wallet.">
       <form className="space-y-4" onSubmit={submit}>
         <div>
           <label className="label" htmlFor="pw">

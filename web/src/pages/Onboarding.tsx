@@ -79,7 +79,7 @@ export default function Onboarding() {
   )
 
   return (
-    <AuthShell title={title} subtitle={subtitle} seed={`solana wallet ${step}`}>
+    <AuthShell title={title} subtitle={subtitle}>
       {step === 'choose' && (
         <div className="space-y-3">
           <button className="btn-primary w-full" onClick={startCreate}>

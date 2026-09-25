@@ -1,3 +1,5 @@
+<p align="center"><img src="web/public/logo.svg" alt="Solana Wallet logo" width="140"></p>
+
 # Solana Wallet
 
 A self-custodial crypto wallet for **Solana devnet**, built as a project for a Solana course. It holds SOL, SPL tokens and NFTs, and lets you **send**, **swap**, **send by link**, **lock funds until a date**, **receive privately** with stealth addresses, and **mint and send NFTs**. Swaps, links, locks and stealth announcements run on our own on-chain program written in Rust with Anchor.
@@ -72,7 +74,7 @@ A self-custodial crypto wallet for **Solana devnet**, built as a project for a S
 
 **Design (Phase 8)**
 
-The wallet is drawn as a banknote ("The Engraved Note"): cool bank-note paper on a teal printing plate, one teal line ink, one red serial ink for ids and alerts, and colour-shift foil for "confirmed". Every address (account, token, NFT) prints its own unique guilloche rosette, and every confirmed transaction is a receipt struck line by line. The layout is a Phantom-style 420px app frame with a five-tab bar that fills the screen on a phone. See [`web/PRODUCT.md`](web/PRODUCT.md) for the product brief and the screenshots in [`docs/screenshots/`](docs/screenshots).
+The wallet is drawn as a banknote ("The Engraved Note"): cool bank-note paper on a teal printing plate, one teal line ink, one red serial ink for ids and alerts, and colour-shift foil for "confirmed". Every address (account, token, NFT) prints its own unique guilloche rosette, and every confirmed transaction is a receipt struck line by line. The layout is a Phantom-style 420px app frame with a five-tab bar that fills the screen on a phone. The logo is one fixed rosette (`web/src/ui/brand.ts`); the favicon, app icons and share image are generated from it with `bun run --cwd scripts brand-assets`, so they can never drift from the mark in the app. See [`web/PRODUCT.md`](web/PRODUCT.md) for the product brief and the screenshots in [`docs/screenshots/`](docs/screenshots).
 
 ## Tech stack
 

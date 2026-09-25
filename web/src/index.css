@@ -298,6 +298,10 @@ input[type='checkbox'] {
   stroke-width: 0.5;
   vector-effect: non-scaling-stroke;
 }
+/* the logo at small sizes (headers, footers) needs a heavier line to stay visible */
+.guilloche.logo-heavy {
+  stroke-width: 1.1;
+}
 
 /* ----------------------------------------------------------------- controls */
 
