@@ -3,6 +3,7 @@ dist/
 .env
 .env.*
 !.env.example
+!.env.*.example
 *.keypair.json
 keys/
 .DS_Store

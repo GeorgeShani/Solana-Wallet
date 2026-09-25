@@ -304,6 +304,17 @@ Safety details covered by tests: a stealth address made of an all-zero or small-
 | **Frontend** (`web/`) | Vercel, Netlify or Cloudflare Pages (all free) | It builds to static files (`bun run build:web`, output `web/dist`). Add a rewrite of every path to `index.html` (the `/claim` link needs it). Set `VITE_API_URL` to the backend's address and `VITE_RPC_URL` to a devnet RPC with its own key (free tiers from Helius or QuickNode), because the public endpoint rate-limits. |
 | **Backend** (`server/`) | Railway or Fly.io, with a persistent volume | It needs a disk (SQLite database and the NFT pictures) and a long-running process, so serverless platforms and free tiers that sleep or wipe their disk are a poor fit. Mount a volume and point `DB_PATH` and `NFT_DIR` at it. Set `ADMIN_SEED` as a secret, `CORS_ORIGINS` to the frontend's address, `PUBLIC_URL` to the backend's own public HTTPS address, and `RPC_URL`. Keep the server wallet funded with a little devnet SOL. |
 
+### Production settings
+
+Each half of the monorepo has its own template. Copy it, fill it in, and never commit the real file (`.env.production` is git-ignored; the `.example` templates are committed).
+
+| File | Used by | Variables |
+| --- | --- | --- |
+| [`web/.env.production.example`](web/.env.production.example) | `vite build` (read automatically) | `VITE_API_URL` (the backend's HTTPS address), `VITE_RPC_URL` (your devnet RPC). Everything `VITE_` ends up in the public bundle, so never put a secret here. |
+| [`server/.env.production.example`](server/.env.production.example) | the backend process (Bun loads it when `NODE_ENV=production`) | `ADMIN_SEED` (secret), `CORS_ORIGINS`, `PUBLIC_URL`, `DB_PATH`, `NFT_DIR`, optional `PORT` and `RPC_URL`. |
+
+On a host such as Vercel or Railway you can skip the files and enter the same names in the dashboard, which is the safer place for `ADMIN_SEED`. The two files must agree with each other: the frontend's `VITE_API_URL` is the backend's `PUBLIC_URL`, and the backend's `CORS_ORIGINS` is the frontend's address.
+
 Two things to know before going live: the backend's address is written into every NFT's on-chain link, so choose the final address before minting anything you want to keep; and browsers block an HTTPS site from calling an HTTP backend, so both must be HTTPS.
 
 ## How the wallet works
