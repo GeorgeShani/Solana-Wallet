@@ -1,13 +1,16 @@
 import { describe, expect, test } from 'bun:test'
 import { address } from '@solana/addresses'
-import idl from '../../anchor/idl/wallet_program.json'
+import idl from '../../../../anchor/idl/wallet_program.json'
 import { getAddressEncoder } from '@solana/addresses'
-import { createIndexer, type ProgramSource, type SignatureInfo } from './announcements'
-import { createApp } from './app'
-import { createAnnouncementStore, createFaucetStore, openDatabase } from './db'
-import { createMemoryNftStore } from './nftStore'
-import { createRateLimiter } from './rateLimit'
-import { newSigner } from './testUtils'
+import { createIndexer } from './announcements.indexer'
+import type { ProgramSource, SignatureInfo } from './announcements.types'
+import { createApp } from '../../app'
+import { openDatabase } from '../../shared/db'
+import { createFaucetStore } from '../faucet/faucet.store'
+import { createAnnouncementStore } from './announcements.store'
+import { createMemoryNftStore } from '../nft/nft.store'
+import { createRateLimiter } from '../../shared/rateLimit'
+import { newSigner } from '../../shared/testUtils'
 
 const enc = getAddressEncoder()
 const DISC = idl.events.find((e) => e.name === 'StealthAnnouncement')!.discriminator

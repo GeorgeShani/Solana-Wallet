@@ -15,4 +15,20 @@ server/data/
 .claude/
 
 # design tool scratch
-web/.impeccable/
+.impeccable/
+
+# Logs and local build output
+logs
+*.log
+dist-ssr
+*.local
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.sw?
+
+# Anchor build output and test ledgers
+test-ledger

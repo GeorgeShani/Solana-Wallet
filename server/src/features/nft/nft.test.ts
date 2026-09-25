@@ -3,9 +3,9 @@ import { mkdtempSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Hono } from 'hono'
-import { createFileNftStore, createMemoryNftStore, isNftId, type NftStore } from './nftStore'
-import { createRateLimiter } from './rateLimit'
-import { MAX_IMAGE_BYTES, nftRoutes, sniffImage } from './routes/nft'
+import { createFileNftStore, createMemoryNftStore, isNftId, type NftStore } from './nft.store'
+import { createRateLimiter } from '../../shared/rateLimit'
+import { MAX_IMAGE_BYTES, nftRoutes, sniffImage } from './nft.routes'
 
 const PNG = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 1, 2, 3, 4])
 const JPEG = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0, 16, 74, 70, 73, 70, 0, 1, 1])

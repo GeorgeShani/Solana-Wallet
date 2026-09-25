@@ -1,6 +1,6 @@
 import { Hono, type Context } from 'hono'
-import type { AnnouncementStore, Indexer } from '../announcements'
-import type { RateLimiter } from '../rateLimit'
+import type { AnnouncementStore, Indexer } from './announcements.types'
+import type { RateLimiter } from '../../shared/rateLimit'
 
 const MAX_LIMIT = 1_000
 

@@ -11,9 +11,9 @@ import {
   PROGRAM_ADDRESS,
   toTransactionMessage,
 } from '@wallet/program-client'
-import type { ProgramSource } from './announcements'
-import type { Config } from './config'
-import { withRetry } from './retry'
+import type { ProgramSource } from '../features/announcements/announcements.types'
+import type { Config } from '../config'
+import { withRetry } from '../shared/retry'
 import type { Chain, Minter, Relayer } from './types'
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))

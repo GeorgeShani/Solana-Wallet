@@ -1,16 +1,13 @@
-import { Hono, type Context } from 'hono'
+import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { getConnInfo } from 'hono/bun'
-import type { AnnouncementStore, Indexer } from './announcements'
-import type { FaucetStore } from './db'
-import type { NftStore } from './nftStore'
-import type { PriceService } from './prices'
-import { createRateLimiter, type RateLimiter } from './rateLimit'
-import { announcementRoutes } from './routes/announcements'
-import { faucetRoutes } from './routes/faucet'
-import { nftRoutes } from './routes/nft'
-import { relayRoutes } from './routes/relay'
-import type { Chain, Minter, Relayer } from './types'
+import type { Chain, Minter, Relayer } from './chain/types'
+import { announcementRoutes, type AnnouncementStore, type Indexer } from './features/announcements'
+import { faucetRoutes, type FaucetStore } from './features/faucet'
+import { nftRoutes, type NftStore } from './features/nft'
+import { priceRoutes, type PriceService } from './features/prices'
+import { relayRoutes } from './features/relay'
+import { clientIp } from './shared/http'
+import { createRateLimiter, type RateLimiter } from './shared/rateLimit'
 
 export interface Deps {
   corsOrigins: string[]
@@ -26,24 +23,14 @@ export interface Deps {
   now?: () => number
 }
 
-/** The caller's IP: the proxy's forwarded address if present, else the socket's. */
-export function clientIp(c: Context): string {
-  const forwarded = c.req.header('x-forwarded-for')?.split(',')[0]?.trim()
-  if (forwarded) return forwarded
-  try {
-    return getConnInfo(c).remote.address ?? 'unknown'
-  } catch {
-    return 'unknown' // not running under Bun.serve (e.g. in tests)
-  }
-}
-
+/** Assembles the API: each feature owns its routes, this only mounts them and adds the shared rules. */
 export function createApp(deps: Deps) {
   const app = new Hono()
   app.use('*', cors({ origin: deps.corsOrigins, allowMethods: ['GET', 'POST', 'OPTIONS'] }))
 
   app.get('/health', (c) => c.json({ ok: true, wallet: deps.minter.address }))
-  app.get('/prices', async (c) => c.json(await deps.prices.get()))
 
+  app.route('/prices', priceRoutes({ prices: deps.prices }))
   app.route(
     '/relay',
     relayRoutes({
@@ -64,7 +51,6 @@ export function createApp(deps: Deps) {
       now: deps.now,
     }),
   )
-
   app.route(
     '/announcements',
     announcementRoutes({
@@ -74,7 +60,6 @@ export function createApp(deps: Deps) {
       clientIp,
     }),
   )
-
   app.route(
     '/nft',
     nftRoutes({

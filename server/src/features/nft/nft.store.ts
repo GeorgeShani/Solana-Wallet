@@ -2,6 +2,9 @@ import { mkdirSync, readdirSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
+/** Picture bytes in a plain ArrayBuffer, which is what a Response body accepts. */
+export type Bytes = Uint8Array<ArrayBuffer>
+
 /** What an NFT's off-chain data looks like once stored. */
 export interface StoredNft {
   name: string
@@ -14,9 +17,9 @@ export interface StoredNft {
  * serve the rest; here that is this server. Nothing in a store is secret: it is all public.
  */
 export interface NftStore {
-  save(input: StoredNft & { image: Uint8Array }): Promise<string>
+  save(input: StoredNft & { image: Bytes }): Promise<string>
   info(id: string): Promise<StoredNft | null>
-  image(id: string): Promise<Uint8Array | null>
+  image(id: string): Promise<Bytes | null>
   count(): number
 }
 
@@ -57,7 +60,7 @@ export function createFileNftStore(dir: string): NftStore {
 
 /** Everything in memory (tests). */
 export function createMemoryNftStore(): NftStore {
-  const items = new Map<string, StoredNft & { image: Uint8Array }>()
+  const items = new Map<string, StoredNft & { image: Bytes }>()
   return {
     async save(input) {
       const id = newId()

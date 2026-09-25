@@ -8,8 +8,8 @@ import {
   systemTransfer,
   derivePoolAddresses,
 } from '@wallet/program-client'
-import { checkRelayTransaction, MAX_TRANSACTION_BYTES } from './relayPolicy'
-import { buildTx, claimFixtures, newSigner, tokenClaimFixtures } from './testUtils'
+import { checkRelayTransaction, MAX_TRANSACTION_BYTES } from './relay.policy'
+import { buildTx, claimFixtures, newSigner, tokenClaimFixtures } from '../../shared/testUtils'
 
 const MINT = address('19wY9kjM8ijyUhjhT2vRBkcpBsXLG8HRMvrNXXQEkdB')
 const reasonOf = (r: ReturnType<typeof checkRelayTransaction>) => (r.ok ? 'ok' : r.reason)

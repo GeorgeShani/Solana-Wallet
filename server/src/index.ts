@@ -1,11 +1,12 @@
-import { createProgramSource, createServerWallet } from './admin'
-import { createIndexer } from './announcements'
-import { createApp } from './app'
-import { loadConfig } from './config'
-import { createAnnouncementStore, createFaucetStore, openDatabase } from './db'
-import { createFileNftStore } from './nftStore'
-import { createPriceService } from './prices'
 import { DEVNET } from '@wallet/shared'
+import { createApp } from './app'
+import { createProgramSource, createServerWallet } from './chain/solana'
+import { loadConfig } from './config'
+import { createAnnouncementStore, createIndexer } from './features/announcements'
+import { createFaucetStore } from './features/faucet'
+import { createFileNftStore } from './features/nft'
+import { createPriceService } from './features/prices'
+import { openDatabase } from './shared/db'
 
 const config = loadConfig()
 const wallet = await createServerWallet(config)

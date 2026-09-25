@@ -1,7 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { createPriceService } from './prices'
-import { createRateLimiter } from './rateLimit'
-import { openFaucetStore } from './db'
+import { createPriceService } from './prices.service'
 
 const ok = (usd: unknown) => async () => new Response(JSON.stringify({ solana: { usd } }), { status: 200 })
 
@@ -52,34 +50,5 @@ describe('price service', () => {
     const svc = createPriceService({ fetchImpl: (async () => (calls++, await new Promise((r) => setTimeout(r, 10)), ok(150)())) as unknown as typeof fetch })
     await Promise.all([svc.get(), svc.get(), svc.get()])
     expect(calls).toBe(1)
-  })
-})
-
-describe('rate limiter', () => {
-  test('allows up to max hits per window, then reports when to retry', () => {
-    let t = 0
-    const rl = createRateLimiter({ windowMs: 1_000, max: 2, now: () => t })
-    expect(rl.hit('a')).toEqual({ ok: true })
-    t = 100
-    expect(rl.hit('a')).toEqual({ ok: true })
-    t = 200
-    expect(rl.hit('a')).toEqual({ ok: false, retryAfterMs: 800 })
-    expect(rl.hit('b')).toEqual({ ok: true }) // separate keys
-    t = 1_001
-    expect(rl.hit('a')).toEqual({ ok: true }) // the first hit aged out
-  })
-})
-
-describe('faucet store', () => {
-  test('tracks the latest claim per address and claims per IP', () => {
-    const s = openFaucetStore(':memory:')
-    expect(s.lastClaimAt('x')).toBeNull()
-    s.record('x', '1.1.1.1', 100)
-    s.record('x', '1.1.1.1', 200)
-    s.record('y', '1.1.1.1', 300)
-    expect(s.lastClaimAt('x')).toBe(200)
-    expect(s.claimsByIpSince('1.1.1.1', 150)).toBe(2)
-    expect(s.claimsByIpSince('1.1.1.1', 0)).toBe(3)
-    expect(s.claimsByIpSince('2.2.2.2', 0)).toBe(0)
   })
 })

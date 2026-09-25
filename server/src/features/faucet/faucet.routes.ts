@@ -1,9 +1,9 @@
 import { address, isAddress, type Address } from '@solana/addresses'
 import { DEVNET } from '@wallet/shared'
 import { Hono, type Context } from 'hono'
-import type { FaucetStore } from '../db'
-import type { RateLimiter } from '../rateLimit'
-import type { Chain, Minter } from '../types'
+import type { FaucetStore } from './faucet.store'
+import type { RateLimiter } from '../../shared/rateLimit'
+import type { Chain, Minter } from '../../chain/types'
 
 /** How much of each test token one claim gives (whole tokens). */
 export const FAUCET_DROPS: Record<string, number> = { tUSDC: 100, tBONK: 1_000_000 }

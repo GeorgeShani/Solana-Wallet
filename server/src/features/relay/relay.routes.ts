@@ -1,8 +1,8 @@
 import { getBase64EncodedWireTransaction } from '@solana/transactions'
 import { Hono, type Context } from 'hono'
-import { checkRelayTransaction, MAX_TRANSACTION_BYTES } from '../relayPolicy'
-import type { RateLimiter } from '../rateLimit'
-import type { Chain, Relayer } from '../types'
+import { checkRelayTransaction, MAX_TRANSACTION_BYTES } from './relay.policy'
+import type { RateLimiter } from '../../shared/rateLimit'
+import type { Chain, Relayer } from '../../chain/types'
 
 /** Below this the relayer stops accepting work rather than fail mid-way (fees are ~0.00001 SOL). */
 export const MIN_RELAYER_LAMPORTS = 5_000_000n

@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
-import { isNftId, type NftStore } from '../nftStore'
-import type { RateLimiter } from '../rateLimit'
+import { isNftId, type Bytes, type NftStore } from './nft.store'
+import type { RateLimiter } from '../../shared/rateLimit'
 
 export const MAX_IMAGE_BYTES = 2 * 1024 * 1024
 const MAX_NAME_BYTES = 32 // what the on-chain NFT allows
@@ -57,7 +57,7 @@ export function nftRoutes(deps: {
     if (description.length > MAX_DESCRIPTION) return c.json({ error: `The description can be at most ${MAX_DESCRIPTION} characters.` }, 400)
     if (file.size > MAX_IMAGE_BYTES) return c.json({ error: 'That file is too large. Use a picture under 2 MB.' }, 413)
 
-    const image = new Uint8Array(await file.arrayBuffer())
+    const image: Bytes = new Uint8Array(await file.arrayBuffer())
     const mime = sniffImage(image)
     if (!mime) return c.json({ error: 'Use a PNG, JPEG, GIF or WebP picture.' }, 415)
 

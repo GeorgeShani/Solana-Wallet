@@ -4,7 +4,6 @@
 
 export const FEE_DENOMINATOR = 10_000n
 export const MINIMUM_LIQUIDITY = 1_000n
-export const U64_MAX = 2n ** 64n - 1n
 
 export class AmmError extends Error {
   constructor(message: string) {

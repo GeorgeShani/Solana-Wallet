@@ -117,17 +117,19 @@ Solana-Wallet/
 │       ├── api.ts        client for the backend
 │       ├── shims/        browser stand-in for a Node-only WDK dependency
 │       └── config.ts     network, RPC URL, known tokens, explorer links
-├── server/               Hono backend
+├── server/               Hono backend, one folder per feature
 │   └── src/
-│       ├── app.ts            wires routes, CORS and error handling
-│       ├── routes/           faucet.ts, relay.ts, announcements.ts, nft.ts
-│       ├── nftStore.ts       where NFT pictures and metadata are kept
-│       ├── relayPolicy.ts    what the relayer will and will not pay for
-│       ├── announcements.ts  indexer that reads stealth announcements from program logs
-│       ├── prices.ts         cached SOL/USD
-│       ├── admin.ts          the server wallet (WDK) and chain adapters
-│       ├── db.ts             SQLite: faucet history and the announcement index
-│       └── retry.ts, rateLimit.ts, config.ts, types.ts, index.ts
+│       ├── index.ts          composition root: builds the pieces and starts the server
+│       ├── app.ts            mounts each feature's routes, CORS and error handling
+│       ├── config.ts         settings from the environment
+│       ├── features/         everything about one capability lives together
+│       │   ├── faucet/          routes, SQLite store, tests
+│       │   ├── relay/           routes, the policy of what the relayer will pay for, tests
+│       │   ├── announcements/   routes, store, indexer that reads stealth announcements, tests
+│       │   ├── nft/             routes, picture store, tests
+│       │   └── prices/          routes, cached SOL/USD service, tests
+│       ├── chain/            talking to Solana: the server wallet (WDK), RPC adapters, interfaces
+│       └── shared/           used by several features: database, rate limiter, retry, client IP, test helpers
 ├── packages/             code shared by web, scripts and server
 │   ├── shared/           AMM and vesting math, stealth-address cryptography, devnet addresses (devnet.json)
 │   └── program-client/   typed client for the program: PDAs, instruction builders, decoders, raw-scalar signing
@@ -317,7 +319,7 @@ Two things to know before going live: the backend's address is written into ever
 - **Library versions.** WDK is built on `@solana/*` 3.0.3, so our own Solana code pins that version to keep transaction types compatible.
 - **Never hard-code rent.** Rent-exempt minimums change between clusters and over time, so the app asks the RPC (`getMinimumBalanceForRentExemption`).
 - **Keep the math in sync.** `packages/shared/src/amm.ts` mirrors `anchor/programs/wallet_program/src/math.rs`. Change both together; the tests use the same vectors.
-- **The relay policy is a security boundary.** Any new instruction the relayer should pay for must be added to `server/src/relayPolicy.ts` deliberately, with a test that an abuse variant is still refused.
+- **The relay policy is a security boundary.** Any new instruction the relayer should pay for must be added to `server/src/features/relay/relay.policy.ts` deliberately, with a test that an abuse variant is still refused.
 
 ## Roadmap
 
